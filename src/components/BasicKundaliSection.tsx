@@ -58,7 +58,7 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
   onKundaliChange,
   onOpenChina17
 }) => {
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isTrialLimitReached, openSubscriptionModal } = useSubscription();
   const { isAdmin } = useAuth();
   const [currentInput, setCurrentInput] = useState<KundaliInput | null>(activeInput || null);
   const [currentResult, setCurrentResult] = useState<KundaliResult | null>(activeKundali || null);
@@ -160,8 +160,8 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
       if (!trialCheck.allowed) {
         setCalcError(
           lang === 'ne'
-            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। थप चिना बनाउन कृपया आधिकारिक कोड प्रविष्ट गर्नुहोस्।'
-            : 'You have reached the 3 Free Trial Kundali limit. Please enter an activation code.'
+            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। ३ पटक भन्दा बढी १७ कुण्डली र चिना बनाउन सदस्यता लिनु आवश्यक छ।'
+            : 'You have reached the 3 Free Trial limit. Subscription is required to create or open 17 Kundali & China beyond 3 times.'
         );
         setShowTrialLimitModal(true);
         return;
@@ -504,8 +504,14 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
               </div>
               <button
                 type="button"
-                onClick={onOpenChina17}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-serif font-bold text-xs sm:text-sm shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
+                onClick={() => {
+                  if (!isSubscribed && isTrialLimitReached) {
+                    openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China');
+                  } else if (onOpenChina17) {
+                    onOpenChina17();
+                  }
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-serif font-bold text-xs sm:text-sm shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer"
               >
                 <span>{lang === 'ne' ? '१७ कुण्डली र चिना खोल्नुहोस्' : 'Open 17 Kundali & China'}</span>
                 <ArrowRight className="w-4 h-4" />

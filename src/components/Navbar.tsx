@@ -33,12 +33,20 @@ export const Navbar: React.FC<NavbarProps> = ({
     openSubscriptionModal,
     trialState,
     isFreeTrialEligible,
+    isTrialLimitReached,
     openFreeTrialModal
   } = useSubscription();
 
   // Safe tab selection handler to avoid crashes
   const handleTabChange = (tabId: string) => {
     try {
+      if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed && isTrialLimitReached) {
+        openSubscriptionModal(
+          tabId === 'china17'
+            ? (lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')
+            : (lang === 'ne' ? 'चिना फलित (China Phalit)' : 'China Phalit')
+        );
+      }
       if (typeof setActiveTab === 'function') {
         setActiveTab(tabId);
       }

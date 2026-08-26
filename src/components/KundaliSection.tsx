@@ -3,7 +3,7 @@ import { KundaliInput, KundaliResult, Language } from '../types';
 import { calculateFullKundali } from '../utils/kundaliEngine';
 import { BirthDetailsForm } from './kundali/BirthDetailsForm';
 import { KundaliDashboard } from './kundali/KundaliDashboard';
-import { Sparkles, History, Trash2, UserCheck, Calculator, Cloud, CloudCheck, RefreshCw, Gift, AlertTriangle } from 'lucide-react';
+import { Sparkles, History, Trash2, UserCheck, Calculator, Cloud, CloudCheck, RefreshCw, Gift, AlertTriangle, Crown } from 'lucide-react';
 import {
   saveKundaliToCloud,
   fetchUserKundalisFromCloud,
@@ -39,7 +39,7 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
   activeInput,
   onKundaliChange
 }) => {
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isTrialLimitReached, openSubscriptionModal } = useSubscription();
   const { isAdmin } = useAuth();
   const [currentInput, setCurrentInput] = useState<KundaliInput | null>(activeInput || null);
   const [currentResult, setCurrentResult] = useState<KundaliResult | null>(activeKundali || null);
@@ -161,8 +161,8 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
       if (!trialCheck.allowed) {
         setCalcError(
           lang === 'ne'
-            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। थप चिना बनाउन कृपया आधिकारिक कोड प्रविष्ट गर्नुहोस्।'
-            : 'You have reached the 3 Free Trial Kundali limit. Please enter an activation code.'
+            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। ३ पटक भन्दा बढी १७ कुण्डली र चिना बनाउन सदस्यता लिनु आवश्यक छ।'
+            : 'You have reached the 3 Free Trial Kundali limit. Subscription is required to open or generate 17 Kundali & China beyond 3 times.'
         );
         setShowTrialLimitModal(true);
         return;
@@ -323,6 +323,34 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
               ? 'VSOP87 / Lahiri Ephemeris अयनंश प्रयोग गरी नवग्रह, १२ भाव र विंशोत्तरी दशा तयार हुँदैछ।'
               : 'Computing JPL/VSOP87 Ephemeris planetary degrees & Varga subdivisions.'}
           </p>
+        </div>
+      )}
+
+      {/* Trial Exhaustion Subscription Notice Banner */}
+      {!isSubscribed && isTrialLimitReached && (
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-950/90 via-amber-950/90 to-red-950/90 border-2 border-amber-500/70 rounded-2xl text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0">
+              <Crown className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-serif font-bold text-sm sm:text-base text-amber-100">
+                {lang === 'ne' ? '३ पटक भन्दा बढी १७ कुण्डली र चिना हेर्न सदस्यता लिनुहोस्' : 'Subscription Required to Open 17 Kundali & China'}
+              </h4>
+              <p className="text-xs text-amber-200/90 mt-0.5">
+                {lang === 'ne'
+                  ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) पूरा भइसकेको छ। सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग), विंशोत्तरी दशा तथा परम्परागत चिना हेर्न सदस्यता आवश्यक छ।'
+                  : 'You have used your 3 free trial charts. An active membership is required to access all 16 divisional charts and full Cheena.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-stone-950 font-serif font-bold text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            {lang === 'ne' ? '👑 सदस्यता योजना छान्नुहोस्' : '👑 Choose Subscription Plan'}
+          </button>
         </div>
       )}
 

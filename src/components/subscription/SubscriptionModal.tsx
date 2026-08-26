@@ -43,6 +43,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ lang = 'ne
     isNearExpiry,
     isExpired,
     daysRemaining,
+    isTrialLimitReached,
     activatePlan,
     redeemCodeAsync,
   } = useSubscription();
@@ -198,6 +199,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ lang = 'ne
               ? 'आफ्नो आवश्यकता अनुसार योजना छान्नुहोस् र सतिक जन्मकुण्डली, दशा-अन्तर्दशा, विस्तृत वार्षिक फलित तथा उपायहरू अनलक गर्नुहोस्।'
               : 'Choose your plan to unlock complete Vedic Kundali, dasha timelines, in-depth annual phalit and astrological remedies.'}
           </p>
+
+          {!isSubscribed && isTrialLimitReached && (
+            <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-500/60 text-xs text-amber-200 max-w-xl mx-auto flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                {isNepali
+                  ? 'निःशुल्क ३ वटा चिना पूरा भएको छ। ३ पटक भन्दा बढी १७ कुण्डली र चिना खोल्न सदस्यता लिनुहोस्।'
+                  : '3 Free Trial Kundalis completed. Subscription is required to open 17 Kundali & China beyond 3 times.'}
+              </span>
+            </div>
+          )}
 
           {/* Tab navigation */}
           {expiryInfo && !expiryInfo.isLifetime && (isNearExpiry || isExpired) && (

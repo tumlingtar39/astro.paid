@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "KundaliRecord": {
+      "title": "KundaliRecord",
+      "description": "Saved Vedic Horoscope Record with astronomical and astrological calculations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the kundali record" },
+        "name": { "type": "string", "description": "Person's name" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"], "description": "Gender" },
+        "birthDateBS": { "type": "string", "description": "Birth date in Bikram Sambat (YYYY-MM-DD)" },
+        "birthDateAD": { "type": "string", "description": "Birth date in Anno Domini (YYYY-MM-DD)" },
+        "birthTime": { "type": "string", "description": "Birth time (HH:MM)" },
+        "birthPlace": { "type": "string", "description": "Place of birth" },
+        "latitude": { "type": "number", "description": "Latitude coordinate" },
+        "longitude": { "type": "number", "description": "Longitude coordinate" },
+        "timezone": { "type": "number", "description": "Timezone offset in hours" },
+        "ayanamsa": { "type": "string", "description": "Ayanamsa system used (e.g. lahiri)" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last updated timestamp" },
+        "notes": { "type": "string", "description": "Astrologer notes or remarks" },
+        "input": { "type": "object", "description": "Full Kundali input object" },
+        "result": { "type": "object", "description": "Full Kundali calculation result object" }
+      },
+      "required": ["id", "name", "birthDateBS", "birthDateAD", "birthTime", "birthPlace", "latitude", "longitude", "timezone"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User or Astrologer profile document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "User UID from Firebase Auth" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "photoURL": { "type": "string", "description": "Avatar image URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last profile update timestamp" }
+      },
+      "required": ["id"]
+    },
+    "MilanRecord": {
+      "title": "MilanRecord",
+      "description": "Kundali Milan compatibility record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record ID" },
+        "boyName": { "type": "string", "description": "Groom's name" },
+        "girlName": { "type": "string", "description": "Bride's name" },
+        "totalGuna": { "type": "number", "description": "Total Guna obtained out of 36" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Record creation timestamp" }
+      },
+      "required": ["id", "boyName", "girlName", "totalGuna"]
+    },
+    "LicenseRecord": {
+      "title": "LicenseRecord",
+      "description": "Access license key and permanent device authorization binding record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "License identifier key" },
+        "licenseKey": { "type": "string", "description": "Unique alphanumeric access license key" },
+        "customerName": { "type": "string", "description": "Name of the customer" },
+        "customerPhone": { "type": "string", "description": "Phone number of the customer" },
+        "customerEmail": { "type": "string", "description": "Email address of customer" },
+        "status": { "type": "string", "enum": ["active", "available", "revoked", "expired"], "description": "License validity status" },
+        "authorizedDeviceId": { "type": "string", "description": "Bound permanent hardware/crypto device identifier" },
+        "deviceStatus": { "type": "string", "enum": ["authorized", "unbound", "blocked", "revoked"], "description": "Current device binding status" },
+        "deviceInfo": { "type": "object", "description": "Metadata of the authorized device" },
+        "activatedAt": { "type": "string", "format": "date-time", "description": "First activation timestamp" },
+        "lastSeenAt": { "type": "string", "format": "date-time", "description": "Last seen timestamp" },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "Optional expiration date" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "License creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "License update timestamp" },
+        "notes": { "type": "string", "description": "Admin notes" },
+        "tier": { "type": "string", "description": "Access tier" }
+      },
+      "required": ["id", "licenseKey", "status"]
+    },
+    "DeviceActivation": {
+      "title": "DeviceActivation",
+      "description": "Log of device activation and verification attempts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log record ID" },
+        "licenseKey": { "type": "string", "description": "License key used" },
+        "deviceId": { "type": "string", "description": "Device identifier" },
+        "action": { "type": "string", "enum": ["activated", "verified", "blocked_duplicate", "reset", "revoked"], "description": "Event action" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Event timestamp" },
+        "userAgent": { "type": "string", "description": "Client user agent" }
+      },
+      "required": ["id", "licenseKey", "deviceId", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/kundalis/{kundaliId}": {
+      "schema": "KundaliRecord",
+      "description": "User's private saved Kundali records"
+    },
+    "/kundalis/{kundaliId}": {
+      "schema": "KundaliRecord",
+      "description": "Public or shared Kundali charts"
+    },
+    "/milanRecords/{milanId}": {
+      "schema": "MilanRecord",
+      "description": "Saved Kundali Milan records"
+    },
+    "/licenses/{licenseId}": {
+      "schema": "LicenseRecord",
+      "description": "Access licenses and bound authorized devices"
+    },
+    "/device_activations/{activationId}": {
+      "schema": "DeviceActivation",
+      "description": "Device authorization and check-in audit logs"
+    }
+  }
+}

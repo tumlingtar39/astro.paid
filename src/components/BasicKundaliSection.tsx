@@ -237,14 +237,42 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
   };
 
   const d1Chart = useMemo(() => {
-    return currentResult?.divisionalCharts?.find((c) => c.type === 'D1') || null;
+    return currentResult?.divisionalCharts?.find((c) => c.type === 'D1' || c.code === 'D1') || null;
   }, [currentResult]);
 
   const d9Chart = useMemo(() => {
-    return currentResult?.divisionalCharts?.find((c) => c.type === 'D9') || null;
+    return currentResult?.divisionalCharts?.find((c) => c.type === 'D9' || c.code === 'D9') || null;
   }, [currentResult]);
 
   const planetList = currentResult?.planetPositions || [];
+
+  // Compute 3rd Free Chart: Chandra Kundali (Moon Sign as 1st House)
+  const chandraChart = useMemo(() => {
+    if (!currentResult || !planetList || planetList.length === 0) return null;
+    const moon = planetList.find((p) => p.id === 'moon');
+    const moonSignIndex = moon?.signIndex ?? 0;
+    const RASHI_NAMES_NE = [
+      'मेष', 'वृष', 'मिथुन', 'कर्कट', 'सिंह', 'कन्या',
+      'तुला', 'वृश्चिक', 'धनु', 'मकर', 'कुम्भ', 'मीन'
+    ];
+    const houses = Array.from({ length: 12 }, (_, i) => {
+      const houseNum = i + 1;
+      const signIdx = (moonSignIndex + i) % 12;
+      const planetsInHouse = planetList.filter((p) => p.signIndex === signIdx);
+      return {
+        houseNum,
+        house: houseNum,
+        signIndex: signIdx,
+        signNe: RASHI_NAMES_NE[signIdx],
+        planets: planetsInHouse
+      };
+    });
+    return {
+      code: 'CHANDRA',
+      signIndex: moonSignIndex,
+      houses
+    };
+  }, [currentResult, planetList]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
@@ -254,7 +282,7 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="bg-emerald-500 text-stone-950 font-black text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
-                {lang === 'ne' ? '✓ निःशुल्क सेवा (Free)' : '✓ 100% Free Service'}
+                {lang === 'ne' ? '✓ ३ कुण्डली निःशुल्क सेवा' : '✓ 3 Free Kundali Charts'}
               </span>
               <span className="bg-amber-900/80 text-amber-300 font-mono text-[11px] px-2.5 py-0.5 rounded-full border border-amber-700/60">
                 {lang === 'ne' ? 'लाहिडी अयनंश' : 'Lahiri Ayanamsha'}
@@ -262,12 +290,12 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-amber-100 flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
-              <span>{lang === 'ne' ? 'जन्म लग्न कुण्डली र नवमांश कुण्डली' : 'Lagna & Navamsha Kundali Charts'}</span>
+              <span>{lang === 'ne' ? 'जन्म लग्न, नवमांश र चन्द्र कुण्डली' : 'Lagna, Navamsha & Chandra Kundali'}</span>
             </h1>
             <p className="text-xs sm:text-sm text-amber-200/90 max-w-2xl">
               {lang === 'ne'
-                ? '२ मुख्य कुण्डली (लग्न चक्र र नवमांश चक्र) तथा विस्तृत ग्रह स्थिति तालिका कुनै पनि सदस्यता बिना तुरुन्त हेर्नुहोस्।'
-                : 'View 2 essential Kundali charts (D1 Lagna & D9 Navamsha) along with complete planetary positions freely without subscription.'}
+                ? '३ मुख्य कुण्डली (लग्न चक्र, नवमांश चक्र र चन्द्र कुण्डली) तथा विस्तृत ग्रह स्थिति तालिका निःशुल्क हेर्नुहोस्।'
+                : 'View 3 essential Kundali charts (D1 Lagna, D9 Navamsha & Chandra Moon Chart) with planetary positions freely.'}
             </p>
           </div>
 
@@ -406,14 +434,14 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
             </div>
           </div>
 
-          {/* 2 KUNDALI CHARTS: LAGNA KUNDALI (D1) & NAVAMSHA KUNDALI (D9) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 3 KUNDALI CHARTS: LAGNA KUNDALI (D1), NAVAMSHA KUNDALI (D9), & CHANDRA KUNDALI */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 1. Main Lagna Kundali (D1) */}
             <div className="bg-gradient-to-b from-amber-950/90 to-black/95 border border-amber-800/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-amber-800/50">
-                <h3 className="font-serif font-bold text-amber-100 text-base flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? '१. मुख्य जन्म लग्न कुण्डली (D1 Rashi Chart)' : '1. Main Birth Lagna Chart (D1)'}</span>
+                <h3 className="font-serif font-bold text-amber-100 text-sm sm:text-base flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{lang === 'ne' ? '१. जन्म लग्न कुण्डली (D1)' : '1. Birth Lagna Chart (D1)'}</span>
                 </h3>
                 <span className="text-[11px] bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded-full border border-amber-700/50 font-mono">
                   D-1
@@ -448,9 +476,9 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
             {/* 2. Navamsha Kundali (D9) */}
             <div className="bg-gradient-to-b from-amber-950/90 to-black/95 border border-amber-800/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-amber-800/50">
-                <h3 className="font-serif font-bold text-amber-100 text-base flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? '२. नवमांश कुण्डली (D9 Navamsha - भाग्य र विवाह)' : '2. Navamsha Chart (D9 - Fortune & Marriage)'}</span>
+                <h3 className="font-serif font-bold text-amber-100 text-sm sm:text-base flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{lang === 'ne' ? '२. नवमांश कुण्डली (D9)' : '2. Navamsha Chart (D9)'}</span>
                 </h3>
                 <span className="text-[11px] bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded-full border border-amber-700/50 font-mono">
                   D-9
@@ -481,9 +509,46 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
                 />
               )}
             </div>
+
+            {/* 3. Chandra Kundali (Moon Sign Chart) */}
+            <div className="bg-gradient-to-b from-amber-950/90 to-black/95 border border-amber-800/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-800/50">
+                <h3 className="font-serif font-bold text-amber-100 text-sm sm:text-base flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{lang === 'ne' ? '३. चन्द्र कुण्डली (Moon Chart)' : '3. Chandra Kundali (Moon Chart)'}</span>
+                </h3>
+                <span className="text-[11px] bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded-full border border-amber-700/50 font-mono">
+                  MOON
+                </span>
+              </div>
+
+              {chartStyle === 'north' ? (
+                <KundaliChartNorth
+                  houses={
+                    chandraChart
+                      ? chandraChart.houses.map((h) => ({
+                          house: h.houseNum,
+                          sign: h.signNe,
+                          planets: h.planets
+                        }))
+                      : []
+                  }
+                  planetPositions={planetList}
+                  lagnaSignIndex={chandraChart?.signIndex || 0}
+                  lang={lang}
+                  title={lang === 'ne' ? '३. चन्द्र कुण्डली' : '3. Chandra Kundali (Moon Chart)'}
+                />
+              ) : (
+                <KundaliChartSouth
+                  planetPositions={planetList}
+                  lang={lang}
+                  title={lang === 'ne' ? '३. चन्द्र कुण्डली' : '3. Chandra Kundali (Moon Chart)'}
+                />
+              )}
+            </div>
           </div>
 
-          {/* TALA GRAHA STHITI: PLANETARY POSITIONS TABLE (Directly below the 2 Kundalis) */}
+          {/* TALA GRAHA STHITI: PLANETARY POSITIONS TABLE (Directly below the 3 Kundalis) */}
           <div>
             <PlanetaryPositionsTable planetPositions={planetList} lang={lang} />
           </div>
@@ -494,18 +559,18 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
               <div className="space-y-1 text-center sm:text-left">
                 <h4 className="font-serif font-bold text-amber-100 text-base flex items-center justify-center sm:justify-start gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? 'थप १६ वर्ग कुण्डली र परम्परागत चिना हेर्न चाहनुहुन्छ?' : 'Want 16 Shodashvarga Charts & Traditional Cheena?'}</span>
+                  <span>{lang === 'ne' ? 'थप १७ कुण्डली र परम्परागत चिना हेर्न चाहनुहुन्छ?' : 'Want 17 Shodashvarga Charts & Traditional Cheena?'}</span>
                 </h4>
                 <p className="text-xs text-amber-300/80 max-w-xl">
                   {lang === 'ne'
-                    ? 'द्रेष्काण, सप्तमांश, दशमांश (D10 क्यारियर), द्वादशांश, षोडशांश, त्रिंशांश, विंशोत्तरी/त्रिभागी दशा र A4 चिना प्रिन्टका लागि १७ कुण्डली र चिना मेनु हेर्नुहोस्।'
-                    : 'Explore all 16 Divisional Charts (D10 Career, D7 Children, D12 Parents, D30 Arishta), Vimshottari Dasha and Full Traditional Cheena.'}
+                    ? 'सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग), विंशोत्तरी/त्रिभागी दशा र A4 चिना प्रिन्टका लागि सदस्यता लिनुहोस्।'
+                    : 'Explore all 16 Divisional Charts, Vimshottari Dasha, and Full Traditional Cheena with active membership.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  if (!isSubscribed && isTrialLimitReached) {
+                  if (!isSubscribed) {
                     openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China');
                   } else if (onOpenChina17) {
                     onOpenChina17();

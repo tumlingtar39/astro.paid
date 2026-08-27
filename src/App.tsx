@@ -16,7 +16,7 @@ import { AuthProvider } from './context/AuthContext';
 import { KundaliInput, KundaliResult, Language } from './types';
 import { PANDIT_INFO } from './data/astrologyData';
 import { Sparkles } from 'lucide-react';
-import { SubscriptionProvider } from './context/SubscriptionContext';
+import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
 import { SubscriptionModal } from './components/subscription/SubscriptionModal';
 import { FreeTrialModal } from './components/subscription/FreeTrialModal';
 import { DeviceAuthGate } from './components/license/DeviceAuthGate';
@@ -30,6 +30,19 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
   const [activeTab, setActiveTab] = useState<string>('kundali');
   const [showVisitingCardModal, setShowVisitingCardModal] = useState<boolean>(false);
   const { theme, isDark } = useTheme();
+  const { isSubscribed, openSubscriptionModal } = useSubscription();
+
+  const handleTabChange = (tabId: string) => {
+    if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed) {
+      openSubscriptionModal(
+        tabId === 'china17'
+          ? (lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')
+          : (lang === 'ne' ? 'वार्षिक फलित (Yearly Predictions)' : 'Yearly Predictions')
+      );
+      return;
+    }
+    setActiveTab(tabId);
+  };
 
   // Synchronized active Kundali across sections
   const [activeKundali, setActiveKundali] = useState<KundaliResult | null>(() => {
@@ -72,7 +85,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
         {/* Main Navigation Bar */}
         <Navbar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           lang={lang}
           setLang={setLang}
           onOpenVisitingCard={() => setShowVisitingCardModal(true)}
@@ -84,7 +97,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
         {/* Global Free Trial Modal */}
         <FreeTrialModal
           lang={lang}
-          onNavigateToForm={() => setActiveTab('kundali')}
+          onNavigateToForm={() => handleTabChange('kundali')}
         />
 
         {/* Accessibility Toolbar for Low Vision & Font Zoom */}
@@ -98,7 +111,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
                 activeKundali={activeKundali}
                 activeInput={activeInput}
                 onKundaliChange={handleKundaliChange}
-                onOpenChina17={() => setActiveTab('china17')}
+                onOpenChina17={() => handleTabChange('china17')}
               />
             )}
             {activeTab === 'china17' && (
@@ -107,7 +120,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
                 activeKundali={activeKundali}
                 activeInput={activeInput}
                 onKundaliChange={handleKundaliChange}
-                onOpenYearlyPhalit={() => setActiveTab('phalit')}
+                onOpenYearlyPhalit={() => handleTabChange('phalit')}
               />
             )}
             {activeTab === 'phalit' && (
@@ -159,35 +172,35 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-amber-400">
-                <button onClick={() => setActiveTab('kundali')} className="hover:underline font-bold text-amber-300">
-                  {lang === 'ne' ? 'कुण्डली (निःशुल्क)' : 'Kundali (Free)'}
+                <button onClick={() => handleTabChange('kundali')} className="hover:underline font-bold text-amber-300">
+                  {lang === 'ne' ? 'कुण्डली (३ कुण्डली निःशुल्क)' : 'Kundali (3 Charts Free)'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('china17')} className="hover:underline">
-                  {lang === 'ne' ? '१७ कुण्डली र चिना' : '17 Kundali & China'}
+                <button onClick={() => handleTabChange('china17')} className="hover:underline">
+                  {lang === 'ne' ? '१७ कुण्डली र चिना (सदस्यता)' : '17 Kundali & China (Member)'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('phalit')} className="hover:underline">
-                  {lang === 'ne' ? 'फलित' : 'Phalit'}
+                <button onClick={() => handleTabChange('phalit')} className="hover:underline">
+                  {lang === 'ne' ? 'फलित (सदस्यता)' : 'Phalit (Member)'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('assistant')} className="hover:underline font-bold text-amber-200">
+                <button onClick={() => handleTabChange('assistant')} className="hover:underline font-bold text-amber-200">
                   {lang === 'ne' ? 'Binay Guru AI Assistant' : 'Binay Guru AI Assistant'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('milan')} className="hover:underline">
+                <button onClick={() => handleTabChange('milan')} className="hover:underline">
                   {lang === 'ne' ? 'कुण्डली मिलान' : 'Kundali Milan'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('numerology')} className="hover:underline">
+                <button onClick={() => handleTabChange('numerology')} className="hover:underline">
                   {lang === 'ne' ? 'अंक ज्योतिष' : 'Numerology'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('vastu')} className="hover:underline">
+                <button onClick={() => handleTabChange('vastu')} className="hover:underline">
                   {lang === 'ne' ? 'वास्तु शास्त्र' : 'Vastu'}
                 </button>
                 <span>•</span>
-                <button onClick={() => setActiveTab('rashifal')} className="hover:underline">
+                <button onClick={() => handleTabChange('rashifal')} className="hover:underline">
                   {lang === 'ne' ? 'पञ्चाङ्ग र राशिफल' : 'Panchang & Rashifal'}
                 </button>
               </div>

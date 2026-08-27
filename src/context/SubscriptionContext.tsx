@@ -231,9 +231,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const isTrialLimitReached = !isSubscribed && (trialState.exhausted || trialState.remaining <= 0);
   const isFreeTrialActiveNow = !isSubscribed && trialState.active && trialState.remaining > 0;
 
-  // Access check: Active subscriber OR free trial with remaining uses
-  const hasAccessToFullKundali = isSubscribed || isFreeTrialActiveNow;
-  const hasAccessToPhalit = isSubscribed || isFreeTrialActiveNow;
+  // Access check: Full 17 Kundali/Cheena and Phalit strictly require active subscription / verified license code
+  const hasAccessToFullKundali = isSubscribed;
+  const hasAccessToPhalit = isSubscribed;
 
   return (
     <SubscriptionContext.Provider

@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Safe tab selection handler to avoid crashes
   const handleTabChange = (tabId: string) => {
     try {
-      if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed && isTrialLimitReached) {
+      if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed) {
         openSubscriptionModal(
           tabId === 'china17'
             ? (lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')

@@ -210,25 +210,58 @@ export function isOfficialLifetimeKey(key: string): boolean {
   return LIFETIME_OFFICIAL_KEYS.includes(clean);
 }
 
-// Pre-configured permanent seed licenses (Strictly Lifetime, single device locked per key)
-export const SEED_LICENSES: LicenseRecord[] = LIFETIME_OFFICIAL_KEYS.map((key, idx) => ({
-  id: key,
-  licenseKey: key,
-  customerName: `Lifetime Member #${idx + 1}`,
-  customerPhone: '',
-  customerEmail: '',
-  status: 'available',
-  authorizedDeviceId: null,
-  deviceStatus: 'unbound',
-  deviceInfo: null,
-  activatedAt: null,
-  lastSeenAt: null,
-  expiresAt: null, // Lifetime access - Never expires
-  createdAt: '2026-08-25T00:00:00.000Z',
-  updatedAt: '2026-08-25T00:00:00.000Z',
-  notes: `Official Lifetime Key (${key}) - Single Device Strictly Enforced`,
-  tier: 'lifetime',
-}));
+// Official 1-Month License Keys (Simple Plan - 1 Month / रु. ३९९)
+export const ONE_MONTH_OFFICIAL_KEYS: string[] = [
+  '3N3YU4LSE5',
+];
+
+export function isOfficial1MonthKey(key: string): boolean {
+  if (!key) return false;
+  const clean = key.trim().toUpperCase().replace(/[\s\-_]/g, '');
+  return ONE_MONTH_OFFICIAL_KEYS.includes(clean);
+}
+
+// Pre-configured permanent seed licenses (Lifetime & 1-Month Simple keys)
+export const SEED_LICENSES: LicenseRecord[] = [
+  // 1-Month Official Keys (Simple Plan - 1 Month)
+  ...ONE_MONTH_OFFICIAL_KEYS.map((key) => ({
+    id: key,
+    licenseKey: key,
+    customerName: '1-Month Member (१ महिने सदस्य)',
+    customerPhone: '',
+    customerEmail: '',
+    status: 'available' as const,
+    authorizedDeviceId: null,
+    deviceStatus: 'unbound' as const,
+    deviceInfo: null,
+    activatedAt: null,
+    lastSeenAt: null,
+    expiresAt: null, // Computed as 1 Month from first activation date
+    createdAt: '2026-08-29T00:00:00.000Z',
+    updatedAt: '2026-08-29T00:00:00.000Z',
+    notes: `Official 1-Month Key (${key}) - 1 Month Single Device License`,
+    tier: 'simple',
+  })),
+  // 80 Official Lifetime Keys (Single Device Strictly Enforced)
+  ...LIFETIME_OFFICIAL_KEYS.map((key, idx) => ({
+    id: key,
+    licenseKey: key,
+    customerName: `Lifetime Member #${idx + 1}`,
+    customerPhone: '',
+    customerEmail: '',
+    status: 'available' as const,
+    authorizedDeviceId: null,
+    deviceStatus: 'unbound' as const,
+    deviceInfo: null,
+    activatedAt: null,
+    lastSeenAt: null,
+    expiresAt: null, // Lifetime access - Never expires
+    createdAt: '2026-08-25T00:00:00.000Z',
+    updatedAt: '2026-08-25T00:00:00.000Z',
+    notes: `Official Lifetime Key (${key}) - Single Device Strictly Enforced`,
+    tier: 'lifetime',
+  })),
+];
 
 // List of legacy demo keys to purge
 const LEGACY_KEYS_TO_PURGE = new Set([

@@ -301,9 +301,15 @@ body {
   box-shadow: 0 20px 40px -15px rgba(180, 83, 9, 0.2) !important;
 }
 
-/* Smooth transition for theme switching */
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
+/* Mobile safe padding support */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+/* Specific smooth transitions without heavy performance cost on mobile */
+button, a, input, select {
+  transition-property: background-color, border-color, color, opacity, transform;
   transition-duration: 0.15s;
   transition-timing-function: ease-out;
+  -webkit-tap-highlight-color: transparent;
 }

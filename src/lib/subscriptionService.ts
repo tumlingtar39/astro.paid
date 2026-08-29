@@ -196,10 +196,14 @@ export const LIFETIME_MASTER_KEYS: Record<string, boolean> = {
   'L2K4J6H8G3': true, 'T5R3E1W9Q7': true, 'A6S4D2F8G1': true, 'U8I6O4P2L9': true, 'B3N5M7K1J6': true
 };
 
-const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number }> = Object.keys(LIFETIME_MASTER_KEYS).reduce((acc, key) => {
-  acc[key] = { planId: 'lifetime', days: 0 };
-  return acc;
-}, {} as Record<string, { planId: SubscriptionPlanId; days: number }>);
+const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number }> = {
+  // Official 1-Month Keys (Simple Plan - 30 Days / 1 Month)
+  '3N3YU4LSE5': { planId: 'simple', days: 30 },
+  ...Object.keys(LIFETIME_MASTER_KEYS).reduce((acc, key) => {
+    acc[key] = { planId: 'lifetime', days: 0 };
+    return acc;
+  }, {} as Record<string, { planId: SubscriptionPlanId; days: number }>),
+};
 
 /**
  * Get active subscription from local storage

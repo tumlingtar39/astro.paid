@@ -1020,6 +1020,11 @@ function loadPaymentRequestsFromDisk() {
   }
 }
 
+// Official 1-Month License Keys (Simple Plan - 1 Month / रु. ३९९)
+const ONE_MONTH_OFFICIAL_KEYS: string[] = [
+  '3N3YU4LSE5',
+];
+
 // Official Lifetime License Keys (80 Official Lifetime Keys - Strictly single device locked per key)
 const LIFETIME_OFFICIAL_KEYS: string[] = [
   // Group 1 (20 keys)
@@ -1061,6 +1066,34 @@ function loadLicensesFromDisk() {
     console.error('Failed to load licenses from disk:', err);
   }
 
+  // Ensure all official 1-Month Keys exist in server registry
+  let newlySeeded1M = 0;
+  ONE_MONTH_OFFICIAL_KEYS.forEach((key) => {
+    const keyUpper = key.trim().toUpperCase();
+    if (!serverLicensesMap.has(keyUpper)) {
+      const oneMonthRecord: ServerLicenseRecord = {
+        id: keyUpper,
+        licenseKey: keyUpper,
+        customerName: '1-Month Member (१ महिने सदस्य)',
+        customerPhone: '',
+        customerEmail: '',
+        status: 'available',
+        authorizedDeviceId: null,
+        deviceStatus: 'unbound',
+        deviceInfo: null,
+        activatedAt: null,
+        lastSeenAt: null,
+        expiresAt: null, // Computed as 1 Month from first activation
+        createdAt: '2026-08-29T00:00:00.000Z',
+        updatedAt: '2026-08-29T00:00:00.000Z',
+        notes: `Official 1-Month Key (${keyUpper}) - 1 Month Single Device License`,
+        tier: 'simple'
+      };
+      serverLicensesMap.set(keyUpper, oneMonthRecord);
+      newlySeeded1M++;
+    }
+  });
+
   // Ensure all official Lifetime Keys exist in server registry
   let newlySeeded = 0;
   LIFETIME_OFFICIAL_KEYS.forEach((key, idx) => {
@@ -1088,7 +1121,7 @@ function loadLicensesFromDisk() {
       newlySeeded++;
     }
   });
-  if (newlySeeded > 0) {
+  if (newlySeeded > 0 || newlySeeded1M > 0) {
     saveLicensesToDisk();
   }
 }
@@ -1259,6 +1292,31 @@ app.post('/api/license/verify-or-activate', (req, res) => {
         serverLicensesMap.set(licenseKey, license);
         saveLicensesToDisk();
       }
+    }
+
+    if (!license && ONE_MONTH_OFFICIAL_KEYS.includes(licenseKey)) {
+      const oneMonth = new Date();
+      oneMonth.setMonth(oneMonth.getMonth() + 1);
+      license = {
+        id: licenseKey,
+        licenseKey,
+        customerName: customerName ? customerName.trim() : '1-Month Member (१ महिने सदस्य)',
+        customerPhone: customerPhone ? customerPhone.trim() : '',
+        customerEmail: customerEmail ? customerEmail.trim() : '',
+        status: 'available',
+        authorizedDeviceId: null,
+        deviceStatus: 'unbound',
+        deviceInfo: null,
+        activatedAt: null,
+        lastSeenAt: null,
+        expiresAt: oneMonth.toISOString(),
+        createdAt: now,
+        updatedAt: now,
+        notes: `Official 1-Month Key (${licenseKey}) - 1 Month Single Device License`,
+        tier: 'simple'
+      };
+      serverLicensesMap.set(licenseKey, license);
+      saveLicensesToDisk();
     }
 
     if (!license && LIFETIME_OFFICIAL_KEYS.includes(licenseKey)) {

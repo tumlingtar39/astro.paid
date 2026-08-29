@@ -573,7 +573,7 @@ export function getLicenseExpiryInfo(license?: LicenseRecord | null): LicenseExp
 /**
  * Read local storage licenses map with dual-layer persistent backup recovery
  */
-function getLocalLicensesMap(): Map<string, LicenseRecord> {
+export function getLocalLicensesMap(): Map<string, LicenseRecord> {
   const map = new Map<string, LicenseRecord>();
   const purgedKeys = getPurgedKeysSet();
 
@@ -881,8 +881,8 @@ export async function verifyOrActivateLicense(
       }),
     });
 
-    if (res.ok) {
-      const data: DeviceAuthorizationResult = await res.json();
+    const data: DeviceAuthorizationResult = await res.json().catch(() => null);
+    if (data) {
       if (data.authorized) {
         setStoredLicenseKey(licenseKey);
         if (data.license) {
@@ -891,9 +891,27 @@ export async function verifyOrActivateLicense(
           saveLocalLicensesMap(map);
         }
         return data;
+      } else {
+        // STRICT CHECK: The server explicitly said this key is BLOCKED, REVOKED, EXPIRED or locked to another device!
+        // We MUST NOT bypass this or fall back to local unbounded seed!
+        if (
+          data.status === 'BLOCKED_DIFFERENT_DEVICE' ||
+          data.status === 'REVOKED' ||
+          data.status === 'EXPIRED' ||
+          data.status === 'INVALID_LICENSE'
+        ) {
+          // If this key was wrongfully saved locally, purge it from local device
+          const map = getLocalLicensesMap();
+          if (map.has(licenseKey)) {
+            const rec = map.get(licenseKey);
+            if (rec && rec.authorizedDeviceId && rec.authorizedDeviceId !== meta.deviceId) {
+              map.delete(licenseKey);
+              saveLocalLicensesMap(map);
+            }
+          }
+          return data;
+        }
       }
-      // If server responded with authorized: false (e.g. key created in AI Studio but server has fresh state),
-      // DO NOT stop! Proceed to check Firestore Cloud Database!
     }
   } catch (_err) {
     // API endpoint unreachable (e.g. static Vercel deployment), proceed to Cloud & Local sync

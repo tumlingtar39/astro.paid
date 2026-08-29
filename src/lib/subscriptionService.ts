@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { getOrCreateDeviceId } from './deviceSecurity';
 
 export type SubscriptionPlanId = 'free' | 'simple' | 'vip' | 'vvip' | 'lifetime';
 
@@ -170,39 +171,15 @@ export const PAYMENT_CHANNELS = {
   }
 };
 
-// Known master activation vouchers fallback (Admin & 80 Official Lifetime Keys)
+// Known master activation vouchers fallback (Master Key only - all other keys strictly require 1 Key = 1 Device verification)
 export const LIFETIME_MASTER_KEYS: Record<string, boolean> = {
   // UNRESTRICTED MASTER KEY ONLY (Works on ANY & UNLIMITED devices)
   '2M2DU6HKX9': true,
-  // --- 80 Official Lifetime Keys (Strictly 1 Key = 1 Device Enforced) ---
-  'A7B2C4D6E8': true, 'M3N5P7R9S1': true, 'K4L6X8Z2W3': true, 'H5J7V9B1N4': true, 'D6F8C2X5M7': true, 
-  'T7Y9K1L3P8': true, 'B2G4J6H8Q9': true, 'X3C5V7N9M1': true, 'R4T6Y8U2I5': true, 'F5G7H9J1K3': true, 
-  'L6Z8X2C4V7': true, 'P7M9N1B3D5': true, 'W8Q2E4R6T9': true, 'S9A1D3F5G8': true, 'Z1X3C5V7B9': true, 
-  'J2K4L6M8N3': true, 'Q3W5E7R9T1': true, 'Y4U6I8O2P5': true, 'G5H7J9K1L3': true, 'V6B8N2M4X7': true,
-
-  'V2X4Z6B8M1': true, 'P3R5T7W9K2': true, 'H4J6L8N1Q3': true, 'D5F7C9V2X4': true, 'M6K8Z1B3H5': true, 
-  'S7N9W2X4L6': true, 'F8T2M4V6R8': true, 'K9P1X3C5N7': true, 'Z1L3B5H7D9': true, 'C2V4N6M8K1': true, 
-  'T3R5S7W9P2': true, 'B4H6F8J1L3': true, 'X5Z7D9V2M4': true, 'N6K8P1X3H5': true, 'W7M9T2C4R6': true, 
-  'J1B3L5F7N9': true, 'Q2X4Z6H8K1': true, 'R3T5V7M9P2': true, 'L4N6X8C1W3': true, 'M5P7K9J2D4': true,
-
-  'X9Z1B3M5K7': true, 'P8R2T4V6L9': true, 'H7J3N5C1W2': true, 'D6F4X8Z2M5': true, 'M5K7P9R1T3': true, 
-  'S4N6H8J2L1': true, 'F3T5D7V9C4': true, 'K2P8M1X3Z6': true, 'Z1L4B6H8N2': true, 'C9V1N3M5K7': true, 
-  'T8R2S4W6P1': true, 'B7H3F5J9L2': true, 'X6Z4D8V2M1': true, 'N5K7P9X1H3': true, 'W4M6T8C2R9': true, 
-  'J3B5L7F1N2': true, 'Q2X8Z4H6K5': true, 'R1T9V3M5P7': true, 'L9N2X4C6W8': true, 'M8P1K3J5D7': true,
-
-  'J4K6L8M2N5': true, 'W3X5Y7Z9A1': true, 'G2H4J6K8L3': true, 'Q1W3E5R7T9': true, 'Z8X6C4V2B1': true, 
-  'F7D5S3A9P2': true, 'M6N8B1V3C5': true, 'H9J1K3L5Z7': true, 'R4T6Y8U1I3': true, 'P2O4I6U8Y5': true, 
-  'K5J3H1G9F7': true, 'D1F3G5H7J2': true, 'C8V6B4N2M9': true, 'X7Z5L3K1J4': true, 'N9B7V5C3X1': true, 
-  'L2K4J6H8G3': true, 'T5R3E1W9Q7': true, 'A6S4D2F8G1': true, 'U8I6O4P2L9': true, 'B3N5M7K1J6': true
 };
 
 const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number }> = {
-  // Official 1-Month Keys (Simple Plan - 30 Days / 1 Month)
-  '3N3YU4LSE5': { planId: 'simple', days: 30 },
-  ...Object.keys(LIFETIME_MASTER_KEYS).reduce((acc, key) => {
-    acc[key] = { planId: 'lifetime', days: 0 };
-    return acc;
-  }, {} as Record<string, { planId: SubscriptionPlanId; days: number }>),
+  // Master key with unlimited access
+  '2M2DU6HKX9': { planId: 'lifetime', days: 0 },
 };
 
 /**
@@ -211,24 +188,17 @@ const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number
 export function getStoredSubscription(): UserSubscription | null {
   if (typeof window === 'undefined') return null;
   try {
-    // 0. If lifetime active flag is set
-    if (localStorage.getItem('astro_lifetime_active') === 'true') {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.planId === 'lifetime' && parsed.status === 'active') return parsed;
-        } catch (_) {}
-      }
+    // 0. If master owner key is active
+    if (localStorage.getItem('astro_master_owner_key_authorized') === 'true') {
       return {
         planId: 'lifetime',
         status: 'active',
-        customerName: 'Lifetime Member (आजन्म ग्राहक)',
+        customerName: 'Master Administrator (मुख्य व्यवस्थापक)',
         customerPhone: '',
-        transactionId: 'LIFETIME-MASTER',
+        transactionId: 'MASTER-2M2DU6HKX9',
         activatedAt: Date.now(),
         expiresAt: 0,
-        voucherCode: 'LIFETIME-KEY'
+        voucherCode: '2M2DU6HKX9'
       };
     }
 
@@ -433,11 +403,20 @@ export function redeemVoucherCode(
   if (!match) {
     // Also check local licenses map synchronously
     try {
+      const currentDeviceId = getOrCreateDeviceId().deviceId;
       const raw = localStorage.getItem('__jyotish_local_licenses_db__');
       if (raw) {
         const list = JSON.parse(raw);
         const lic = Array.isArray(list) ? list.find((l: any) => l?.licenseKey?.toUpperCase() === clean) : null;
         if (lic) {
+          if (lic.authorizedDeviceId && lic.authorizedDeviceId !== currentDeviceId) {
+            return {
+              success: false,
+              messageNe: '⚠️ अनधिकृत पहुँच रोकियो: यो कोड पहिले नै अर्को डिभाइसमा दर्ता भइसकेको छ। १ कोड = १ डिभाइस मात्र मान्य छ।',
+              messageEn: 'Unauthorized Access Blocked: This license is locked to another device. 1 Key = 1 Device policy strictly enforced.'
+            };
+          }
+
           const tier = (lic.tier || 'vip').toLowerCase() as SubscriptionPlanId;
           const validTier: SubscriptionPlanId = ['simple', 'vip', 'vvip', 'lifetime'].includes(tier) ? tier : 'vip';
           const expTime = lic.expiresAt && validTier !== 'lifetime' ? new Date(lic.expiresAt).getTime() : 0;

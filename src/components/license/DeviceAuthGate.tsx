@@ -37,6 +37,7 @@ import {
   findBestActiveLicenseForDevice,
   getAllDeviceLicenses,
   isSecretMasterKey,
+  getLocalLicensesMap,
 } from '../../lib/licenseService';
 import { UnauthorizedDeviceScreen } from './UnauthorizedDeviceScreen';
 import { AdminLicenseManager } from './AdminLicenseManager';
@@ -248,8 +249,12 @@ export const DeviceAuthGate: React.FC<Props> = ({
       }
     } catch (err: any) {
       console.error('Gate authorization error:', err);
-      // Offline fallback: if previously authorized on this device, keep authorized without interruption!
-      if (storedKey && storedKey === effectiveKey) {
+      // Offline fallback: ONLY if previously confirmed & authorized on THIS specific device!
+      const currentDevId = getOrCreateDeviceId().deviceId;
+      const localLic = getStoredLicenseKey() ? getLocalLicensesMap().get(effectiveKey) : null;
+      const isBoundToThisDevice = localLic && localLic.authorizedDeviceId === currentDevId && localLic.status === 'active';
+
+      if (!navigator.onLine && storedKey && storedKey === effectiveKey && isBoundToThisDevice) {
         setIsOffline(true);
         setAuthStatus('AUTHORIZED');
       } else {
@@ -261,7 +266,7 @@ export const DeviceAuthGate: React.FC<Props> = ({
           authorized: false,
           status: 'OFFLINE_UNVERIFIED',
           licenseKey: effectiveKey,
-          deviceId: getOrCreateDeviceId().deviceId,
+          deviceId: currentDevId,
           messageNe: 'नेटवर्क वा प्रमाणीकरण सर्भरसँग सम्पर्क हुन सकेन। कृपया इन्टरनेट जाँच गर्नुहोस्।',
           messageEn: 'Unable to contact verification server. Please check your internet connection.',
         });
@@ -379,114 +384,148 @@ export const DeviceAuthGate: React.FC<Props> = ({
     );
   }
 
-  // 2. Strict Lock: If device is not authorized with a valid activation code, show Unauthorized Lock Screen!
-  if (!isDeviceAuthorized) {
-    return (
-      <>
-        <UnauthorizedDeviceScreen
-          authResult={authResult}
-          language={language}
-          onRetry={() => performVerification()}
-          onSubmitNewKey={(key, name, phone) => handleManualKeySubmit(key, name, phone)}
-          onOpenAdmin={() => setIsAdminOpen(true)}
-        />
-
-        {/* Admin License Manager Modal */}
-        <AdminLicenseManager
-          isOpen={isAdminOpen}
-          onClose={() => setIsAdminOpen(false)}
-          language={language}
-          onSelectLicenseToUse={handleAdminSelectLicense}
-        />
-
-        {/* User / Customer Profile Auth Modal */}
-        <AuthModal
-          language={language}
-          onOpenAdminPanel={() => setIsAdminOpen(true)}
-        />
-      </>
-    );
-  }
-
-  // 3. Fully Authorized Mode - App opens with all features unlocked!
+  // 2. Render Main Application with appropriate status bar and modals
   return (
     <div className="relative min-h-screen">
-      {/* Top Status Bar: Authorized Mode */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/60 border-b border-amber-500/20 px-3 sm:px-6 py-1.5 text-xs text-slate-300 flex items-center justify-between shadow-sm z-30 relative">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
-          </span>
-          <span className="hidden md:inline text-slate-400">|</span>
-          <span className="hidden md:inline font-mono text-amber-300/90 text-[11px]">
-            Key: {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
-          </span>
-          {authResult?.customerName && (
-            <span className="hidden sm:inline text-slate-300 text-[11px]">
-              ({authResult.customerName})
+      {/* Top Status Bar */}
+      {isDeviceAuthorized ? (
+        /* Authorized Status Bar */
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/60 border-b border-amber-500/20 px-3 sm:px-6 py-1.5 text-xs text-slate-300 flex items-center justify-between shadow-sm z-30 relative">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
             </span>
-          )}
-          {/* Active Tier Pill */}
-          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-semibold">
-            {expiryInfo.tier === 'vvip' ? <Crown className="w-3 h-3 text-purple-400" /> : expiryInfo.tier === 'vip' ? <Sparkles className="w-3 h-3 text-amber-400" /> : expiryInfo.tier === 'simple' ? <Zap className="w-3 h-3 text-emerald-400" /> : <Award className="w-3 h-3 text-blue-400" />}
-            {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
-          </span>
-        </div>
+            <span className="hidden md:inline text-slate-400">|</span>
+            <span className="hidden md:inline font-mono text-amber-300/90 text-[11px]">
+              Key: {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
+            </span>
+            {authResult?.customerName && (
+              <span className="hidden sm:inline text-slate-300 text-[11px]">
+                ({authResult.customerName})
+              </span>
+            )}
+            {/* Active Tier Pill */}
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-semibold">
+              {expiryInfo.tier === 'vvip' ? <Crown className="w-3 h-3 text-purple-400" /> : expiryInfo.tier === 'vip' ? <Sparkles className="w-3 h-3 text-amber-400" /> : expiryInfo.tier === 'simple' ? <Zap className="w-3 h-3 text-emerald-400" /> : <Award className="w-3 h-3 text-blue-400" />}
+              {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Multi-Key Device Pill if customer has multiple registered keys on this device */}
-          {deviceLicenses.length > 1 && (
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Multi-Key Device Pill if customer has multiple registered keys on this device */}
+            {deviceLicenses.length > 1 && (
+              <button
+                onClick={() => setShowMultiKeyModal(true)}
+                className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer"
+                title={isNepali ? 'यस यन्त्रमा उपलब्ध Key हरू' : 'Available Keys on this Device'}
+              >
+                <KeyRound className="w-3 h-3 text-amber-400" />
+                <span>
+                  {isNepali ? `${deviceLicenses.length} वटा Key` : `${deviceLicenses.length} Keys`}
+                </span>
+              </button>
+            )}
+
+            {/* Change / Add Code Button */}
             <button
-              onClick={() => setShowMultiKeyModal(true)}
-              className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer"
-              title={isNepali ? 'यस यन्त्रमा उपलब्ध Key हरू' : 'Available Keys on this Device'}
+              onClick={() => setShowActivateKeyModal(true)}
+              className="px-2 py-1 rounded-md text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition cursor-pointer"
+              title={isNepali ? 'नयाँ Key हाल्नुहोस्' : 'Enter another key'}
             >
               <KeyRound className="w-3 h-3 text-amber-400" />
-              <span>
-                {isNepali ? `${deviceLicenses.length} वटा Key` : `${deviceLicenses.length} Keys`}
-              </span>
+              <span className="hidden sm:inline">{isNepali ? 'Key बदल्नुहोस्' : 'Switch Key'}</span>
             </button>
-          )}
 
-          {/* Admin Panel Button - Only shown when user is Admin */}
-          {isAdmin && (
-            <button
-              onClick={() => setIsAdminOpen(true)}
-              className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 border shadow-sm transition cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 border-amber-300"
-              title={isNepali ? 'इजाजतपत्र व्यवस्थापन (Admin)' : 'Admin License Manager'}
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>{isNepali ? 'व्यवस्थापन (Admin)' : 'Admin'}</span>
-            </button>
-          )}
-
-          {/* User Account / Switcher Pill */}
-          <button
-            onClick={openAuthModal}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1.5 border transition shadow-sm cursor-pointer ${
-              isAdmin
-                ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/80'
-                : 'bg-slate-800/90 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
-            }`}
-            title={
-              currentUser
-                ? `Active: ${currentUser.customerName || currentUser.displayName || currentUser.email || 'Customer'}`
-                : 'Sign in / Switch Account'
-            }
-          >
-            <User className="w-3 h-3 text-amber-400" />
-            <span className="max-w-[120px] sm:max-w-[170px] truncate">
-              {currentUser
-                ? (currentUser.customerName || currentUser.displayName || currentUser.email)
-                : (isNepali ? 'ग्राहक विवरण' : 'Customer Profile')}
-            </span>
+            {/* Admin Panel Button */}
             {isAdmin && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <button
+                onClick={() => setIsAdminOpen(true)}
+                className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 border shadow-sm transition cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 border-amber-300"
+                title={isNepali ? 'इजाजतपत्र व्यवस्थापन (Admin)' : 'Admin License Manager'}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{isNepali ? 'व्यवस्थापन (Admin)' : 'Admin'}</span>
+              </button>
             )}
-          </button>
+
+            {/* User Account / Switcher Pill */}
+            <button
+              onClick={openAuthModal}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1.5 border transition shadow-sm cursor-pointer ${
+                isAdmin
+                  ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/80'
+                  : 'bg-slate-800/90 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
+              }`}
+              title={
+                currentUser
+                  ? `Active: ${currentUser.customerName || currentUser.displayName || currentUser.email || 'Customer'}`
+                  : 'Sign in / Switch Account'
+              }
+            >
+              <User className="w-3 h-3 text-amber-400" />
+              <span className="max-w-[120px] sm:max-w-[170px] truncate">
+                {currentUser
+                  ? (currentUser.customerName || currentUser.displayName || currentUser.email)
+                  : (isNepali ? 'ग्राहक विवरण' : 'Customer Profile')}
+              </span>
+              {isAdmin && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Free Mode Top Bar with Quick Activation and WhatsApp link */
+        <div className="bg-gradient-to-r from-amber-950/90 via-slate-950 to-stone-900 border-b border-amber-500/30 px-3 sm:px-6 py-1.5 text-xs text-amber-200 flex items-center justify-between shadow-sm z-30 relative">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-semibold">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              {isNepali ? 'निःशुल्क संस्करण (Free Mode)' : 'Free Mode'}
+            </span>
+            <span className="hidden md:inline text-amber-400/70 text-[11px]">
+              {isNepali ? '• १७ कुण्डली र वार्षिक फलितका लागि कोड आवश्यक छ' : '• 17 Kundali & Yearly Phalit require license code'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Activate Code Button */}
+            <button
+              onClick={() => setShowActivateKeyModal(true)}
+              className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-sm transition cursor-pointer"
+            >
+              <KeyRound className="w-3 h-3" />
+              <span>{isNepali ? '🔑 कोड हाल्नुहोस्' : 'Enter Code'}</span>
+            </button>
+
+            {/* WhatsApp Request Link */}
+            <a
+              href={`https://wa.me/9779863991384?text=${encodeURIComponent(`नमस्ते पण्डित ज्यू! मलाई ज्योतिष एपको १७ कुण्डली र फलित सुविधाहरू अनलक गर्न आधिकारिक कोड (Key) चाहिएको छ। Device ID: ${getOrCreateDeviceId().deviceId}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer"
+            >
+              <PhoneCall className="w-3 h-3" />
+              <span>{isNepali ? '💬 ह्वाट्सएप: ९८६३९९१३८४' : 'WhatsApp'}</span>
+            </a>
+
+            {/* Admin Login / Manage */}
+            <button
+              onClick={() => {
+                if (isAdmin) {
+                  setIsAdminOpen(true);
+                } else {
+                  openAuthModal();
+                }
+              }}
+              className="px-2 py-1 rounded-md text-[11px] font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
+            >
+              <User className="w-3 h-3 text-amber-400" />
+              <span className="hidden sm:inline">{isAdmin ? (isNepali ? 'व्यवस्थापन (Admin)' : 'Admin') : (isNepali ? 'लगइन' : 'Login')}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Renewal Notification Bar (Shown ONLY for Simple / VIP / VVIP when expiring soon; NEVER for Lifetime) */}
       {!expiryInfo.isLifetime && expiryInfo.shouldShowRenewNotice && (

@@ -13,8 +13,6 @@ import {
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { getStoredLicenseKey } from '../lib/deviceSecurity';
-import { recordTrialChinaGeneration, getTrialState, FREE_TRIAL_MAX_CHINA } from '../lib/trialService';
-import { TrialLimitModal } from './subscription/TrialLimitModal';
 
 interface SavedKundali {
   id: string;
@@ -39,19 +37,47 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
   activeInput,
   onKundaliChange
 }) => {
-  const { isSubscribed, isTrialLimitReached, openSubscriptionModal } = useSubscription();
+  const { isSubscribed, openSubscriptionModal, redeemCodeAsync } = useSubscription();
   const { isAdmin } = useAuth();
   const [currentInput, setCurrentInput] = useState<KundaliInput | null>(activeInput || null);
   const [currentResult, setCurrentResult] = useState<KundaliResult | null>(activeKundali || null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [calcError, setCalcError] = useState<string | null>(null);
-  const [trialNotice, setTrialNotice] = useState<string | null>(null);
-  const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   const [savedKundalis, setSavedKundalis] = useState<SavedKundali[]>([]);
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const [firestoreConnected, setFirestoreConnected] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Lifetime key activation input in gate
+  const [keyInput, setKeyInput] = useState<string>('');
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [keySuccess, setKeySuccess] = useState<string | null>(null);
+  const [isActivatingKey, setIsActivatingKey] = useState<boolean>(false);
+
+  const handleDirectKeyActivate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKeyError(null);
+    setKeySuccess(null);
+    const trimmed = keyInput.trim().toUpperCase().replace(/[\s\-_]/g, '');
+    if (!trimmed) {
+      setKeyError(lang === 'ne' ? 'कृपया लाइफटाइम वा सदस्यता की राख्नुहोस्।' : 'Please enter a lifetime or license key.');
+      return;
+    }
+    setIsActivatingKey(true);
+    try {
+      const res = await redeemCodeAsync(trimmed);
+      if (res.success) {
+        setKeySuccess(lang === 'ne' ? res.messageNe : res.messageEn);
+      } else {
+        setKeyError(lang === 'ne' ? res.messageNe : res.messageEn);
+      }
+    } catch (_e) {
+      setKeyError(lang === 'ne' ? 'सक्रियता गर्दा समस्या आयो।' : 'Activation error occurred.');
+    } finally {
+      setIsActivatingKey(false);
+    }
+  };
 
   // Synchronize when props change
   useEffect(() => {
@@ -148,34 +174,6 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
   const handleCalculate = (input: KundaliInput) => {
     setCalcError(null);
     setSaveMessage(null);
-    setTrialNotice(null);
-
-    // Check if user is licensed/subscribed/admin or within 3-China Free Trial
-    const storedKey = getStoredLicenseKey();
-    const isLicensedUser = isSubscribed || isAdmin || Boolean(storedKey && storedKey.length >= 8);
-
-    if (!isLicensedUser) {
-      const chinaId = `${input.name}_${input.birthDate}_${input.birthTime}_${input.birthPlace}`.toLowerCase().trim();
-      const trialCheck = recordTrialChinaGeneration(chinaId);
-
-      if (!trialCheck.allowed) {
-        setCalcError(
-          lang === 'ne'
-            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। ३ पटक भन्दा बढी १७ कुण्डली र चिना बनाउन सदस्यता लिनु आवश्यक छ।'
-            : 'You have reached the 3 Free Trial Kundali limit. Subscription is required to open or generate 17 Kundali & China beyond 3 times.'
-        );
-        setShowTrialLimitModal(true);
-        return;
-      }
-
-      if (trialCheck.usedCount > 0) {
-        setTrialNotice(
-          lang === 'ne'
-            ? `निःशुल्क परीक्षण: ${trialCheck.usedCount}/${FREE_TRIAL_MAX_CHINA} चिना प्रयोग भयो (बाँकी: ${trialCheck.remaining})`
-            : `Free Trial: ${trialCheck.usedCount}/${FREE_TRIAL_MAX_CHINA} used (${trialCheck.remaining} remaining)`
-        );
-      }
-    }
 
     setIsCalculating(true);
     // Give smooth UI feedback
@@ -326,50 +324,6 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
         </div>
       )}
 
-      {/* Trial Exhaustion Subscription Notice Banner */}
-      {!isSubscribed && isTrialLimitReached && (
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-950/90 via-amber-950/90 to-red-950/90 border-2 border-amber-500/70 rounded-2xl text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0">
-              <Crown className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="font-serif font-bold text-sm sm:text-base text-amber-100">
-                {lang === 'ne' ? '३ पटक भन्दा बढी १७ कुण्डली र चिना हेर्न सदस्यता लिनुहोस्' : 'Subscription Required to Open 17 Kundali & China'}
-              </h4>
-              <p className="text-xs text-amber-200/90 mt-0.5">
-                {lang === 'ne'
-                  ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) पूरा भइसकेको छ। सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग), विंशोत्तरी दशा तथा परम्परागत चिना हेर्न सदस्यता आवश्यक छ।'
-                  : 'You have used your 3 free trial charts. An active membership is required to access all 16 divisional charts and full Cheena.'}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-stone-950 font-serif font-bold text-xs sm:text-sm shadow-xl hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            {lang === 'ne' ? '👑 सदस्यता योजना छान्नुहोस्' : '👑 Choose Subscription Plan'}
-          </button>
-        </div>
-      )}
-
-      {trialNotice && !calcError && (
-        <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-200 text-xs flex items-center justify-between gap-2 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <Gift className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="font-medium">{trialNotice}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowTrialLimitModal(true)}
-            className="text-[11px] px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shrink-0"
-          >
-            {lang === 'ne' ? 'कोड राख्नुहोस्' : 'Enter Code'}
-          </button>
-        </div>
-      )}
-
       {calcError && (
         <div className="bg-rose-950/80 border border-rose-700 p-4 rounded-xl text-rose-200 text-xs sm:text-sm flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-2">
@@ -377,12 +331,6 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
             <span>{calcError}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowTrialLimitModal(true)}
-              className="px-2.5 py-1 rounded bg-rose-800 hover:bg-rose-700 text-white font-bold text-xs transition"
-            >
-              {lang === 'ne' ? 'अनलक गर्नुहोस्' : 'Unlock'}
-            </button>
             <button
               onClick={() => setCalcError(null)}
               className="text-rose-400 hover:text-rose-100 font-bold underline text-xs"
@@ -393,7 +341,83 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
         </div>
       )}
 
-      {currentResult && currentInput ? (
+      {/* Strict Subscription Lock Screen for 17 Kundali & China */}
+      {!isSubscribed ? (
+        <div className="max-w-3xl mx-auto my-6 p-6 sm:p-8 bg-gradient-to-b from-amber-950/90 via-stone-950 to-black border-2 border-amber-500/70 rounded-3xl text-amber-100 shadow-2xl text-center space-y-6 animate-fadeIn">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-600 to-amber-300 p-0.5 mx-auto shadow-xl shadow-amber-950/50 flex items-center justify-center">
+            <div className="w-full h-full rounded-full bg-stone-950 flex items-center justify-center text-amber-400">
+              <Crown className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              {lang === 'ne' ? '👑 केवल सदस्यता प्राप्त ग्राहकहरूका लागि' : '👑 Exclusive to Subscribed Members'}
+            </span>
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-200">
+              {lang === 'ne' ? '१७ कुण्डली र परम्परागत चिना (17 Kundali & China)' : '17 Divisional Charts & Cheena'}
+            </h2>
+            <p className="text-xs sm:text-sm text-amber-200/80 max-w-xl mx-auto leading-relaxed">
+              {lang === 'ne'
+                ? 'यस विशेष खण्डमा सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग D1 देखि D60), विंशोत्तरी एवं त्रिभागी महादशा-अन्तर्दशा, र A4 साइजको परम्परागत नेपाली चिना डाउनलोड तथा प्रिन्ट समावेश छ।'
+                : 'This section contains all 16 Divisional Charts (Shodashvarga D1 to D60), Vimshottari & Tribhagi Dashas, and traditional Cheena PDF print.'}
+            </p>
+          </div>
+
+          {/* Quick Key Activation Form */}
+          <div className="max-w-md mx-auto p-4 sm:p-5 bg-stone-900/90 border border-amber-600/50 rounded-2xl space-y-3">
+            <h4 className="text-xs font-bold text-amber-300 flex items-center justify-center gap-1.5 font-serif">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{lang === 'ne' ? 'लाइफटाइम वा सदस्यता की हाल्नुहोस्:' : 'Enter Lifetime / License Key:'}</span>
+            </h4>
+            <form onSubmit={handleDirectKeyActivate} className="space-y-2.5">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value.toUpperCase())}
+                  placeholder={lang === 'ne' ? 'उदा: A7B2C4D6E8' : 'e.g. A7B2C4D6E8'}
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-black/80 border border-amber-500/60 text-amber-100 text-center font-mono font-bold tracking-widest text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-stone-600"
+                />
+                <button
+                  type="submit"
+                  disabled={isActivatingKey}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs shadow-md transition shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {isActivatingKey ? (lang === 'ne' ? 'प्रमाणित गर्दै...' : 'Checking...') : (lang === 'ne' ? 'एक्टिभ गर्नुहोस्' : 'Activate')}
+                </button>
+              </div>
+              {keyError && (
+                <p className="text-[11px] text-rose-400 font-semibold bg-rose-950/60 p-2 rounded-lg border border-rose-800">
+                  {keyError}
+                </p>
+              )}
+              {keySuccess && (
+                <p className="text-[11px] text-emerald-400 font-semibold bg-emerald-950/60 p-2 rounded-lg border border-emerald-800">
+                  {keySuccess}
+                </p>
+              )}
+            </form>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-stone-950 font-serif font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              {lang === 'ne' ? '👑 सदस्यता योजनाहरू हेर्नुहोस् (Pricing Plans)' : '👑 View Subscription Plans'}
+            </button>
+          </div>
+
+          <p className="text-[11px] text-amber-400/80 pt-2 border-t border-amber-900/60">
+            {lang === 'ne'
+              ? '💡 ३ वटा मुख्य कुण्डली (लग्न, नवमांश र चन्द्र कुण्डली) माथिको "कुण्डली" ट्याबमा सबैका लागि निःशुल्क छ।'
+              : '💡 3 Core Charts (Lagna, Navamsha & Chandra) are 100% Free on the "Kundali" tab.'}
+          </p>
+        </div>
+      ) : currentResult && currentInput ? (
         <KundaliDashboard
           result={currentResult}
           input={currentInput}
@@ -495,13 +519,6 @@ export const KundaliSection: React.FC<KundaliSectionProps> = ({
           </div>
         </div>
       )}
-
-      {/* Free Trial Limit Modal */}
-      <TrialLimitModal
-        isOpen={showTrialLimitModal}
-        onClose={() => setShowTrialLimitModal(false)}
-        lang={lang}
-      />
     </div>
   );
 };

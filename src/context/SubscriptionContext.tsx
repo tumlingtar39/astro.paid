@@ -12,7 +12,6 @@ import {
 import { useAuth, SUPER_ADMIN_EMAIL } from './AuthContext';
 import { getStoredLicenseKey } from '../lib/deviceSecurity';
 import { findBestActiveLicenseForDevice, getLicenseExpiryInfo, LicenseExpiryInfo } from '../lib/licenseService';
-import { getTrialState, TrialState, startFreeTrial, recordTrialChinaGeneration } from '../lib/trialService';
 
 interface SubscriptionContextType {
   currentPlan: SubscriptionPlanId;
@@ -39,16 +38,6 @@ interface SubscriptionContextType {
   refreshSubscription: () => Promise<void>;
   hasAccessToPhalit: boolean;
   hasAccessToFullKundali: boolean;
-  // Free Trial State & Controls
-  trialState: TrialState;
-  isFreeTrialEligible: boolean;
-  isTrialLimitReached: boolean;
-  isFreeTrialActiveNow: boolean;
-  trialModalOpen: boolean;
-  openFreeTrialModal: () => void;
-  closeFreeTrialModal: () => void;
-  startTrial: () => void;
-  refreshTrialState: () => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -58,28 +47,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [subscription, setSubscription] = useState<UserSubscription | null>(() => getStoredSubscription());
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [requiredFeatureTitle, setRequiredFeatureTitle] = useState<string | null>(null);
-  const [trialState, setTrialState] = useState<TrialState>(() => getTrialState());
-  const [trialModalOpen, setTrialModalOpen] = useState<boolean>(false);
 
   // Auto-grant super-admin / developer lifetime access
   const isSuperAdmin = Boolean(
     isAdmin ||
     (currentUser?.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase())
   );
-
-  const refreshTrialState = useCallback(() => {
-    setTrialState(getTrialState());
-  }, []);
-
-  useEffect(() => {
-    const handleTrialEvent = () => {
-      refreshTrialState();
-    };
-    window.addEventListener('jyotish_trial_updated', handleTrialEvent);
-    return () => {
-      window.removeEventListener('jyotish_trial_updated', handleTrialEvent);
-    };
-  }, [refreshTrialState]);
 
   // Refresh and sync device license state
   const refreshSubscription = useCallback(async () => {
@@ -174,19 +147,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setRequiredFeatureTitle(null);
   }, []);
 
-  const openFreeTrialModal = useCallback(() => {
-    setTrialModalOpen(true);
-  }, []);
-
-  const closeFreeTrialModal = useCallback(() => {
-    setTrialModalOpen(false);
-  }, []);
-
-  const startTrial = useCallback(() => {
-    const updated = startFreeTrial();
-    setTrialState(updated);
-  }, []);
-
   const activatePlan = useCallback((
     planId: SubscriptionPlanId,
     customerName?: string,
@@ -204,7 +164,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (res.success && res.subscription) {
       setSubscription(res.subscription);
       setIsModalOpen(false);
-      setTrialModalOpen(false);
     }
     return res;
   }, []);
@@ -214,7 +173,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (res.success && res.subscription) {
       setSubscription(res.subscription);
       setIsModalOpen(false);
-      setTrialModalOpen(false);
     }
     return res;
   }, []);
@@ -225,11 +183,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
     setSubscription(null);
   }, []);
-
-  // Free trial eligibility
-  const isFreeTrialEligible = !isSubscribed && !trialState.exhausted && trialState.remaining > 0;
-  const isTrialLimitReached = !isSubscribed && (trialState.exhausted || trialState.remaining <= 0);
-  const isFreeTrialActiveNow = !isSubscribed && trialState.active && trialState.remaining > 0;
 
   // Access check: Full 17 Kundali/Cheena and Phalit strictly require active subscription / verified license code
   const hasAccessToFullKundali = isSubscribed;
@@ -256,15 +209,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         refreshSubscription,
         hasAccessToPhalit,
         hasAccessToFullKundali,
-        trialState,
-        isFreeTrialEligible,
-        isTrialLimitReached,
-        isFreeTrialActiveNow,
-        trialModalOpen,
-        openFreeTrialModal,
-        closeFreeTrialModal,
-        startTrial,
-        refreshTrialState,
       }}
     >
       {children}

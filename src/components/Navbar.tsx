@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { PANDIT_INFO } from '../data/astrologyData';
 import { Language } from '../types';
-import { Sparkles, Compass, Info, Phone, Calendar, Globe, Menu, X, BookOpen, User, ArrowRight, Heart, MessageSquare, Sun, Moon, ShieldCheck, LogIn, KeyRound, Crown, CreditCard, Gift } from 'lucide-react';
+import { Sparkles, Compass, Info, Phone, Calendar, Globe, Menu, X, BookOpen, User, ArrowRight, Heart, MessageSquare, Sun, Moon, ShieldCheck, LogIn, KeyRound, Crown, CreditCard } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, SUPER_ADMIN_EMAIL } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { SUBSCRIPTION_PLANS } from '../lib/subscriptionService';
-import { FREE_TRIAL_MAX_CHINA } from '../lib/trialService';
 
 interface NavbarProps {
   activeTab: string;
@@ -31,10 +30,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     currentPlan,
     isSubscribed,
     openSubscriptionModal,
-    trialState,
-    isFreeTrialEligible,
-    isTrialLimitReached,
-    openFreeTrialModal
   } = useSubscription();
 
   // Safe tab selection handler to avoid crashes
@@ -283,26 +278,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Controls for Mobile / Tablet */}
           <div className="flex items-center gap-2">
-            {/* Free Trial Button (Visible for non-subscribed users) */}
-            {!isSubscribed && (
-              <button
-                onClick={openFreeTrialModal}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-black border transition-all active:scale-95 shadow-md cursor-pointer ${
-                  isFreeTrialEligible
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-stone-950 border-emerald-300 shadow-emerald-500/20'
-                    : 'bg-stone-900 text-amber-300 border-amber-600/40 hover:bg-stone-800'
-                }`}
-                title="निःशुल्क परीक्षण (Free Trial) - ३ जन्म विवरण सम्म सबै फिचर निःशुल्क"
-              >
-                <Gift className="w-3.5 h-3.5 text-stone-950 shrink-0" />
-                <span className="whitespace-nowrap">
-                  {isFreeTrialEligible
-                    ? (lang === 'ne' ? `🎁 फ्री ट्रायल (${trialState.remaining}/3)` : `🎁 Free Trial (${trialState.remaining}/3)`)
-                    : (lang === 'ne' ? '🎁 फ्री ट्रायल (समाप्त)' : '🎁 Trial Ended')}
-                </span>
-              </button>
-            )}
-
             {/* Subscription Plans Button */}
             <button
               onClick={() => openSubscriptionModal()}
@@ -445,40 +420,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Free Trial Banner in Mobile Drawer */}
-            {!isSubscribed && (
-              <div
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openFreeTrialModal();
-                }}
-                className={`p-3 rounded-2xl border shadow-lg cursor-pointer flex items-center justify-between transition-all active:scale-[0.98] ${
-                  isFreeTrialEligible
-                    ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 text-stone-950 border-emerald-300 shadow-emerald-500/20'
-                    : 'bg-stone-900/90 text-amber-300 border-amber-600/40'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-stone-950/20 text-stone-950">
-                    <Gift className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-black">
-                      {isFreeTrialEligible
-                        ? (lang === 'ne' ? `🎁 निःशुल्क परीक्षण (Free Trial: ${trialState.remaining}/3)` : `🎁 Free Trial (${trialState.remaining}/3 Remaining)`)
-                        : (lang === 'ne' ? '🎁 फ्री ट्रायल (३/३ पूरा भयो)' : '🎁 Free Trial (3/3 Used)')}
-                    </div>
-                    <div className="text-[10px] font-medium opacity-90">
-                      {isFreeTrialEligible
-                        ? (lang === 'ne' ? '३ वटा सम्म जन्म विवरण हालेर सम्पूर्ण फिचर हेर्नुहोस्' : 'Enter up to 3 birth details and explore all features')
-                        : (lang === 'ne' ? 'यस डिभाइसमा ३ पटकको निःशुल्क परीक्षण पूरा भयो' : 'Free trial exhausted on this device')}
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-stone-950 shrink-0" />
-              </div>
-            )}
 
             {/* Premium Subscription Plan Banner in Drawer */}
             <div

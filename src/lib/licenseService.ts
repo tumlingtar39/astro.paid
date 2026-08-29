@@ -180,9 +180,8 @@ export function verifySignedLicenseKey(keyInput: string): { valid: boolean; tier
   return { valid: false, tier: 'lifetime', cleanKey: clean };
 }
 
-// Official Lifetime License Keys (80 Lifetime Keys + 1 Master Lifetime Key strictly single device locked)
+// Official Lifetime License Keys (80 Official Lifetime Keys - Strictly single device locked per key)
 export const LIFETIME_OFFICIAL_KEYS: string[] = [
-  '3B6F5JUE7A', // Master Pre-configured Lifetime Key
   // Group 1 (20 keys)
   'A7B2C4D6E8', 'M3N5P7R9S1', 'K4L6X8Z2W3', 'H5J7V9B1N4', 'D6F8C2X5M7', 
   'T7Y9K1L3P8', 'B2G4J6H8Q9', 'X3C5V7N9M1', 'R4T6Y8U2I5', 'F5G7H9J1K3', 
@@ -207,7 +206,7 @@ export const LIFETIME_OFFICIAL_KEYS: string[] = [
 
 export function isOfficialLifetimeKey(key: string): boolean {
   if (!key) return false;
-  const clean = key.trim().toUpperCase();
+  const clean = key.trim().toUpperCase().replace(/[\s\-_]/g, '');
   return LIFETIME_OFFICIAL_KEYS.includes(clean);
 }
 

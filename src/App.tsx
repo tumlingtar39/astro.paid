@@ -18,7 +18,6 @@ import { PANDIT_INFO } from './data/astrologyData';
 import { Sparkles } from 'lucide-react';
 import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
 import { SubscriptionModal } from './components/subscription/SubscriptionModal';
-import { FreeTrialModal } from './components/subscription/FreeTrialModal';
 import { DeviceAuthGate } from './components/license/DeviceAuthGate';
 
 interface MainAppContentProps {
@@ -93,12 +92,6 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
 
         {/* Global Subscription Modal */}
         <SubscriptionModal lang={lang} />
-
-        {/* Global Free Trial Modal */}
-        <FreeTrialModal
-          lang={lang}
-          onNavigateToForm={() => handleTabChange('kundali')}
-        />
 
         {/* Accessibility Toolbar for Low Vision & Font Zoom */}
         <AccessibilityBar lang={lang} />

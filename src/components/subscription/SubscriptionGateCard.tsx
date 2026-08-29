@@ -1,9 +1,8 @@
 import React from 'react';
-import { Crown, Sparkles, ShieldCheck, CheckCircle2, Lock, ArrowRight, Gift } from 'lucide-react';
+import { Crown, Sparkles, ShieldCheck, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { Language } from '../../types';
 import { SUBSCRIPTION_PLANS } from '../../lib/subscriptionService';
-import { FREE_TRIAL_MAX_CHINA } from '../../lib/trialService';
 
 interface SubscriptionGateCardProps {
   lang?: Language;
@@ -15,7 +14,6 @@ interface SubscriptionGateCardProps {
   featureDescription?: string;
   featureListNe?: string[];
   featureListEn?: string[];
-  onOpenTrial?: () => void;
 }
 
 export const SubscriptionGateCard: React.FC<SubscriptionGateCardProps> = ({
@@ -38,15 +36,35 @@ export const SubscriptionGateCard: React.FC<SubscriptionGateCardProps> = ({
     'Annual 12 House forecast & Overseas travel yoga',
     'Formal Vedic Cheena PDF & High-Res Print'
   ],
-  onOpenTrial
 }) => {
   const {
     openSubscriptionModal,
-    openFreeTrialModal,
-    trialState,
-    isFreeTrialEligible
+    redeemCodeAsync
   } = useSubscription();
   const isNepali = lang === 'ne';
+  const [quickKey, setQuickKey] = React.useState('');
+  const [keyMsg, setKeyMsg] = React.useState<{ text: string; error?: boolean } | null>(null);
+  const [isActivating, setIsActivating] = React.useState(false);
+
+  const handleQuickKeySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKeyMsg(null);
+    const clean = quickKey.trim().toUpperCase().replace(/[\s\-_]/g, '');
+    if (!clean) return;
+    setIsActivating(true);
+    try {
+      const res = await redeemCodeAsync(clean);
+      if (res.success) {
+        setKeyMsg({ text: isNepali ? res.messageNe : res.messageEn, error: false });
+      } else {
+        setKeyMsg({ text: isNepali ? res.messageNe : res.messageEn, error: true });
+      }
+    } catch (_e) {
+      setKeyMsg({ text: isNepali ? 'त्रुटि भयो' : 'Error occurred', error: true });
+    } finally {
+      setIsActivating(false);
+    }
+  };
 
   const headingText = isNepali
     ? (titleNe || featureName || 'कुण्डली तथा फलित हेर्न सदस्यता छनौट गर्नुहोस्')
@@ -72,21 +90,6 @@ export const SubscriptionGateCard: React.FC<SubscriptionGateCardProps> = ({
               <Crown className="w-4 h-4 text-stone-950 animate-bounce" />
               <span>{isNepali ? '👑 सदस्यता योजना' : '👑 Membership Required'}</span>
             </div>
-
-            {isFreeTrialEligible && (
-              <button
-                type="button"
-                onClick={openFreeTrialModal}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 font-bold text-xs hover:bg-emerald-500/30 transition cursor-pointer"
-              >
-                <Gift className="w-3.5 h-3.5 text-emerald-400" />
-                <span>
-                  {isNepali
-                    ? `🎁 फ्री ट्रायल: ३ मध्ये ${trialState.remaining} पटक बाँकी`
-                    : `🎁 Free Trial: ${trialState.remaining} uses left`}
-                </span>
-              </button>
-            )}
           </div>
 
           <h3 className="text-xl sm:text-2xl font-extrabold text-amber-100 font-serif drop-shadow-md">
@@ -133,23 +136,8 @@ export const SubscriptionGateCard: React.FC<SubscriptionGateCardProps> = ({
           ))}
         </div>
 
-        {/* Main CTA Buttons with Free Trial Priority */}
+        {/* Main CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          {isFreeTrialEligible && (
-            <button
-              type="button"
-              onClick={openFreeTrialModal}
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-stone-950 font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95"
-            >
-              <Gift className="w-4 h-4 text-stone-950" />
-              <span>
-                {isNepali
-                  ? `🎁 ३ पटक निःशुल्क परीक्षण गर्नुहोस् (${trialState.remaining} बाँकी)`
-                  : `🎁 Try Free Trial (${trialState.remaining} left)`}
-              </span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => openSubscriptionModal(isNepali ? titleNe : titleEn)}
@@ -163,6 +151,35 @@ export const SubscriptionGateCard: React.FC<SubscriptionGateCardProps> = ({
             </span>
             <ArrowRight className="w-4 h-4 text-stone-950" />
           </button>
+        </div>
+
+        {/* Quick Lifetime / Voucher Key Activation Form */}
+        <div className="max-w-md mx-auto p-3.5 bg-black/60 border border-amber-500/40 rounded-xl space-y-2 text-center">
+          <div className="text-[11px] font-bold text-amber-300 font-serif flex items-center justify-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isNepali ? 'वा सक्रियता की / भौचर पिन राख्नुहोस्:' : 'Or enter Activation Key / PIN:'}</span>
+          </div>
+          <form onSubmit={handleQuickKeySubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={quickKey}
+              onChange={(e) => setQuickKey(e.target.value.toUpperCase())}
+              placeholder={isNepali ? 'उदा: A7B2C4D6E8' : 'e.g. A7B2C4D6E8'}
+              className="flex-1 px-3 py-1.5 rounded-lg bg-stone-900 border border-amber-600/60 text-amber-100 text-center font-mono font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-stone-600"
+            />
+            <button
+              type="submit"
+              disabled={isActivating}
+              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition cursor-pointer disabled:opacity-50"
+            >
+              {isActivating ? (isNepali ? '...' : '...') : (isNepali ? 'अनलक' : 'Unlock')}
+            </button>
+          </form>
+          {keyMsg && (
+            <p className={`text-[11px] font-semibold ${keyMsg.error ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {keyMsg.text}
+            </p>
+          )}
         </div>
 
         {/* Guarantee footer */}

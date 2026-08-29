@@ -170,10 +170,36 @@ export const PAYMENT_CHANNELS = {
   }
 };
 
-// Known master activation vouchers fallback (Admin Only)
-const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number }> = {
-  'BINAY9819': { planId: 'lifetime', days: 0 }
+// Known master activation vouchers fallback (Admin & 80 Official Lifetime Keys)
+export const LIFETIME_MASTER_KEYS: Record<string, boolean> = {
+  // UNRESTRICTED MASTER KEY ONLY (Works on ANY & UNLIMITED devices)
+  '2M2DU6HKX9': true,
+  // --- 80 Official Lifetime Keys (Strictly 1 Key = 1 Device Enforced) ---
+  'A7B2C4D6E8': true, 'M3N5P7R9S1': true, 'K4L6X8Z2W3': true, 'H5J7V9B1N4': true, 'D6F8C2X5M7': true, 
+  'T7Y9K1L3P8': true, 'B2G4J6H8Q9': true, 'X3C5V7N9M1': true, 'R4T6Y8U2I5': true, 'F5G7H9J1K3': true, 
+  'L6Z8X2C4V7': true, 'P7M9N1B3D5': true, 'W8Q2E4R6T9': true, 'S9A1D3F5G8': true, 'Z1X3C5V7B9': true, 
+  'J2K4L6M8N3': true, 'Q3W5E7R9T1': true, 'Y4U6I8O2P5': true, 'G5H7J9K1L3': true, 'V6B8N2M4X7': true,
+
+  'V2X4Z6B8M1': true, 'P3R5T7W9K2': true, 'H4J6L8N1Q3': true, 'D5F7C9V2X4': true, 'M6K8Z1B3H5': true, 
+  'S7N9W2X4L6': true, 'F8T2M4V6R8': true, 'K9P1X3C5N7': true, 'Z1L3B5H7D9': true, 'C2V4N6M8K1': true, 
+  'T3R5S7W9P2': true, 'B4H6F8J1L3': true, 'X5Z7D9V2M4': true, 'N6K8P1X3H5': true, 'W7M9T2C4R6': true, 
+  'J1B3L5F7N9': true, 'Q2X4Z6H8K1': true, 'R3T5V7M9P2': true, 'L4N6X8C1W3': true, 'M5P7K9J2D4': true,
+
+  'X9Z1B3M5K7': true, 'P8R2T4V6L9': true, 'H7J3N5C1W2': true, 'D6F4X8Z2M5': true, 'M5K7P9R1T3': true, 
+  'S4N6H8J2L1': true, 'F3T5D7V9C4': true, 'K2P8M1X3Z6': true, 'Z1L4B6H8N2': true, 'C9V1N3M5K7': true, 
+  'T8R2S4W6P1': true, 'B7H3F5J9L2': true, 'X6Z4D8V2M1': true, 'N5K7P9X1H3': true, 'W4M6T8C2R9': true, 
+  'J3B5L7F1N2': true, 'Q2X8Z4H6K5': true, 'R1T9V3M5P7': true, 'L9N2X4C6W8': true, 'M8P1K3J5D7': true,
+
+  'J4K6L8M2N5': true, 'W3X5Y7Z9A1': true, 'G2H4J6K8L3': true, 'Q1W3E5R7T9': true, 'Z8X6C4V2B1': true, 
+  'F7D5S3A9P2': true, 'M6N8B1V3C5': true, 'H9J1K3L5Z7': true, 'R4T6Y8U1I3': true, 'P2O4I6U8Y5': true, 
+  'K5J3H1G9F7': true, 'D1F3G5H7J2': true, 'C8V6B4N2M9': true, 'X7Z5L3K1J4': true, 'N9B7V5C3X1': true, 
+  'L2K4J6H8G3': true, 'T5R3E1W9Q7': true, 'A6S4D2F8G1': true, 'U8I6O4P2L9': true, 'B3N5M7K1J6': true
 };
+
+const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number }> = Object.keys(LIFETIME_MASTER_KEYS).reduce((acc, key) => {
+  acc[key] = { planId: 'lifetime', days: 0 };
+  return acc;
+}, {} as Record<string, { planId: SubscriptionPlanId; days: number }>);
 
 /**
  * Get active subscription from local storage
@@ -181,6 +207,27 @@ const MASTER_VOUCHERS: Record<string, { planId: SubscriptionPlanId; days: number
 export function getStoredSubscription(): UserSubscription | null {
   if (typeof window === 'undefined') return null;
   try {
+    // 0. If lifetime active flag is set
+    if (localStorage.getItem('astro_lifetime_active') === 'true') {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.planId === 'lifetime' && parsed.status === 'active') return parsed;
+        } catch (_) {}
+      }
+      return {
+        planId: 'lifetime',
+        status: 'active',
+        customerName: 'Lifetime Member (आजन्म ग्राहक)',
+        customerPhone: '',
+        transactionId: 'LIFETIME-MASTER',
+        activatedAt: Date.now(),
+        expiresAt: 0,
+        voucherCode: 'LIFETIME-KEY'
+      };
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const sub: UserSubscription = JSON.parse(raw);
@@ -203,7 +250,15 @@ export function saveSubscription(sub: UserSubscription): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sub));
+    if (sub.planId === 'lifetime' && sub.status === 'active') {
+      localStorage.setItem('astro_lifetime_active', 'true');
+    }
     
+    // Dispatch global event for instant UI re-render
+    try {
+      window.dispatchEvent(new CustomEvent('jyotish_subscription_updated', { detail: sub }));
+    } catch (_) {}
+
     // Also sync to cloud firestore in background
     if (db && sub.customerPhone) {
       const cleanPhone = sub.customerPhone.replace(/\D/g, '');
@@ -256,7 +311,7 @@ export async function redeemVoucherCodeAsync(
   customerName?: string,
   customerPhone?: string
 ): Promise<{ success: boolean; subscription?: UserSubscription; messageNe: string; messageEn: string }> {
-  const clean = code.trim().toUpperCase();
+  const clean = code.trim().toUpperCase().replace(/[\s\-_]/g, '');
   if (!clean) {
     return {
       success: false,
@@ -265,81 +320,97 @@ export async function redeemVoucherCodeAsync(
     };
   }
 
-  // 1. Check master vouchers first
-  const match = MASTER_VOUCHERS[clean];
-  if (match) {
+  // 1. Secret Master Key (2M2DU6HKX9) - Unrestricted access on ANY device
+  if (clean === '2M2DU6HKX9') {
     const now = Date.now();
-    const expiresAt = match.days > 0 ? now + match.days * 24 * 60 * 60 * 1000 : 0;
-
     const sub: UserSubscription = {
-      planId: match.planId,
+      planId: 'lifetime',
       status: 'active',
-      customerName: customerName || 'Kundali User',
+      customerName: customerName || 'Master Administrator (मुख्य व्यवस्थापक)',
       customerPhone: customerPhone || '',
-      transactionId: `VOUCHER-${clean}`,
+      transactionId: `MASTER-2M2DU6HKX9`,
       activatedAt: now,
-      expiresAt,
-      voucherCode: clean
+      expiresAt: 0,
+      voucherCode: '2M2DU6HKX9'
     };
+
+    try {
+      localStorage.setItem('astro_lifetime_active', 'true');
+      localStorage.setItem('astro_master_owner_key_authorized', 'true');
+      const { setStoredLicenseKey, addStoredLicenseKey } = await import('./deviceSecurity');
+      setStoredLicenseKey('2M2DU6HKX9');
+      addStoredLicenseKey('2M2DU6HKX9');
+      localStorage.setItem('astro_active_key', '2M2DU6HKX9');
+    } catch (_) {}
 
     saveSubscription(sub);
 
-    const planObj = SUBSCRIPTION_PLANS.find(p => p.id === match.planId);
     return {
       success: true,
       subscription: sub,
-      messageNe: `बधाई छ! ${planObj?.nameNe || 'योजना'} सफलतापूर्वक सक्रिय भयो! अब असीमित कुण्डली र फलित हेर्न सक्नुहुन्छ।`,
-      messageEn: `Congratulations! ${planObj?.nameEn || 'Plan'} activated successfully! Full Kundali & Phalit unlocked.`
+      messageNe: 'मास्टर की प्रमाणीकरण सफल भयो। सम्पूर्ण सुविधाहरू तथा व्यवस्थापक नियन्त्रण खुला छ।',
+      messageEn: 'Master Key verified successfully. All features and admin controls are unlocked.'
     };
   }
 
-  // 2. Check dynamically created admin license codes in Firestore / Server / Local Storage
+  // 2. 80 Official Lifetime Keys & Admin Generated License codes (Strict 1 Key = 1 Device Check)
   try {
     const { verifyOrActivateLicense } = await import('./licenseService');
     const authResult = await verifyOrActivateLicense(clean, customerName, customerPhone);
 
     if (authResult.authorized && authResult.license) {
       const lic = authResult.license;
-      const tier = (lic.tier || 'vip').toLowerCase() as SubscriptionPlanId;
-      const validTier: SubscriptionPlanId = ['simple', 'vip', 'vvip', 'lifetime'].includes(tier) ? tier : 'vip';
+      const tier = (lic.tier || 'lifetime').toLowerCase() as SubscriptionPlanId;
+      const validTier: SubscriptionPlanId = ['simple', 'vip', 'vvip', 'lifetime'].includes(tier) ? tier : 'lifetime';
       
       let expTime = 0;
       if (lic.expiresAt && validTier !== 'lifetime') {
         expTime = new Date(lic.expiresAt).getTime();
       }
 
+      const now = Date.now();
       const sub: UserSubscription = {
         planId: validTier,
         status: 'active',
-        customerName: lic.customerName || customerName || 'ग्राहक',
+        customerName: lic.customerName || customerName || 'Authorized User',
         customerPhone: lic.customerPhone || customerPhone || '',
         transactionId: `LIC-${clean}`,
-        activatedAt: lic.activatedAt ? new Date(lic.activatedAt).getTime() : Date.now(),
+        activatedAt: lic.activatedAt ? new Date(lic.activatedAt).getTime() : now,
         expiresAt: expTime,
         voucherCode: clean
       };
 
+      try {
+        if (validTier === 'lifetime') {
+          localStorage.setItem('astro_lifetime_active', 'true');
+        }
+        const { setStoredLicenseKey, addStoredLicenseKey } = await import('./deviceSecurity');
+        setStoredLicenseKey(clean);
+        addStoredLicenseKey(clean);
+        localStorage.setItem('astro_active_key', clean);
+      } catch (_) {}
+
       saveSubscription(sub);
-      const planObj = SUBSCRIPTION_PLANS.find(p => p.id === validTier);
 
       return {
         success: true,
         subscription: sub,
-        messageNe: `बधाई छ! ${planObj?.nameNe || 'योजना'} सफलतापूर्वक सक्रिय भयो! यो १ डिभाइसमा सुरक्षित दर्ता भयो।`,
-        messageEn: `Congratulations! ${planObj?.nameEn || 'Plan'} activated successfully and securely bound to this device.`
-      };
-    } else {
-      return {
-        success: false,
-        messageNe: authResult.messageNe || 'अमान्य वा प्रयोग भइसकेको कोड। कृपया बैंक भुक्तानी गरी पण्डित ज्यूबाट नयाँ कोड लिनुहोस्।',
-        messageEn: authResult.messageEn || 'Invalid or expired code. Please make bank payment and contact Pandit Ji for a valid code.'
+        messageNe: authResult.messageNe || `बधाई छ! तपाईंको इजाजतपत्र (${clean}) यस डिभाइसमा सफलतापूर्वक सक्रिय भयो।`,
+        messageEn: authResult.messageEn || `Congratulations! License (${clean}) successfully activated on this device.`
       };
     }
-  } catch (e: any) {
+
+    // If verification failed (e.g. key already bound to another device or invalid)
     return {
       success: false,
-      messageNe: 'सक्रियता गर्दा समस्या आयो। कृपया पुनः प्रयास गर्नुहोस् वा WhatsApp मा सम्पर्क गर्नुहोस्।',
-      messageEn: 'Error during activation. Please try again or contact support.'
+      messageNe: authResult.messageNe || 'अमान्य वा पहिले नै अर्को डिभाइसमा दर्ता भइसकेको की। १ Key = १ डिभाइस मात्र मान्य हुन्छ।',
+      messageEn: authResult.messageEn || 'Invalid or already bound key. 1 Key = 1 Device policy strictly enforced.'
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      messageNe: 'सक्रियता गर्दा त्रुटि भयो। कृपया इन्टरनेट जाँच गरी पुनः प्रयास गर्नुहोस्।',
+      messageEn: 'Error during activation. Please check your connection and try again.'
     };
   }
 }

@@ -38,13 +38,6 @@ import {
   getAllDeviceLicenses,
   isSecretMasterKey,
 } from '../../lib/licenseService';
-import {
-  getTrialState,
-  startFreeTrial,
-  clearFreeTrial,
-  TrialState,
-  FREE_TRIAL_MAX_CHINA
-} from '../../lib/trialService';
 import { UnauthorizedDeviceScreen } from './UnauthorizedDeviceScreen';
 import { AdminLicenseManager } from './AdminLicenseManager';
 import { useAuth, SUPER_ADMIN_EMAIL } from '../../context/AuthContext';
@@ -69,13 +62,12 @@ export const DeviceAuthGate: React.FC<Props> = ({
     try {
       const isOwner = localStorage.getItem(OWNER_MASTER_STORAGE_KEY) === 'true' || getStoredLicenseKey() === '2M2DU6HKX9';
       if (isOwner) return 'AUTHORIZED';
+      if (localStorage.getItem('astro_lifetime_active') === 'true') {
+        return 'AUTHORIZED';
+      }
       const stored = getStoredLicenseKey();
       if (stored) {
         // Fast instant unlock on authorized device without annoying login prompts
-        return 'AUTHORIZED';
-      }
-      const trial = getTrialState();
-      if (!trial.exhausted) {
         return 'AUTHORIZED';
       }
     } catch (_e) {}
@@ -103,7 +95,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
     }
     return null;
   });
-  const [trialState, setTrialState] = useState<TrialState>(() => getTrialState());
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [deviceLicenses, setDeviceLicenses] = useState<LicenseRecord[]>([]);
@@ -116,15 +107,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
   const [copiedLinkKey, setCopiedLinkKey] = useState<string | null>(null);
 
   const isNepali = language === 'ne';
-
-  // Listen for Free Trial updates across components
-  useEffect(() => {
-    const handleTrialUpdate = (e: any) => {
-      setTrialState(e?.detail || getTrialState());
-    };
-    window.addEventListener('jyotish_trial_updated', handleTrialUpdate);
-    return () => window.removeEventListener('jyotish_trial_updated', handleTrialUpdate);
-  }, []);
 
   // Refresh list of all keys belonging to this physical device
   const refreshDeviceLicenses = useCallback(async () => {
@@ -165,7 +147,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
       try {
         localStorage.setItem(OWNER_MASTER_STORAGE_KEY, 'true');
       } catch (_e) {}
-      clearFreeTrial();
       setStoredLicenseKey('2M2DU6HKX9');
       setActiveKey('2M2DU6HKX9');
       await loginAsSuperAdmin('2m2du6hkx9');
@@ -192,28 +173,15 @@ export const DeviceAuthGate: React.FC<Props> = ({
       }
     }
 
-    // 2. Check if Free Trial mode is active or available on this device (if no paid key is set)
-    const currentTrial = getTrialState();
     if (!effectiveKey) {
-      if (!currentTrial.exhausted) {
-        // Automatically start Free Trial mode if not already exhausted
-        if (!currentTrial.active) {
-          startFreeTrial();
-        }
-        setAuthStatus('AUTHORIZED');
-        refreshDeviceLicenses();
-        return;
-      }
-
-      // Trial is fully exhausted and no key is bound -> Prompt user with Activation Key entry
       setAuthStatus('UNAUTHORIZED');
       setAuthResult({
         authorized: false,
         status: 'INVALID_LICENSE',
         licenseKey: '',
         deviceId: getOrCreateDeviceId().deviceId,
-        messageNe: 'तपाईंको ३ पटकको निःशुल्क परीक्षण (Free Trial) को सीमा पूरा भयो। एप निरन्तर चलाउन कृपया आधिकारिक एक्टिभेसन कोड (Key) प्रविष्ट गर्नुहोस्।',
-        messageEn: 'Your 3 free trial uses have ended. Please enter an authorized activation key to continue.',
+        messageNe: 'एप प्रयोग गर्न कृपया आधिकारिक एक्टिभेसन कोड (Key) प्रविष्ट गर्नुहोस्।',
+        messageEn: 'Please enter an authorized activation key to continue.',
       });
       refreshDeviceLicenses();
       return;
@@ -237,7 +205,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
       setAuthResult(result);
 
       if (result.authorized) {
-        clearFreeTrial();
         setAuthStatus('AUTHORIZED');
         setStoredLicenseKey(effectiveKey);
         setIsOffline(false);
@@ -263,7 +230,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
               emailToSend
             );
             if (altResult.authorized) {
-              clearFreeTrial();
               setAuthResult(altResult);
               setAuthStatus('AUTHORIZED');
               setStoredLicenseKey(alternate.licenseKey);
@@ -272,13 +238,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
               return;
             }
           }
-        }
-
-        // If key failed but trial is active:
-        if (currentTrial.active) {
-          setAuthStatus('AUTHORIZED');
-          refreshDeviceLicenses();
-          return;
         }
 
         // If server explicitly declined (e.g. key locked to another phone or deleted)
@@ -290,8 +249,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
       // Offline fallback: if previously authorized on this device, keep authorized without interruption!
       if (storedKey && storedKey === effectiveKey) {
         setIsOffline(true);
-        setAuthStatus('AUTHORIZED');
-      } else if (currentTrial.active) {
         setAuthStatus('AUTHORIZED');
       } else {
         if (!navigator.onLine) {
@@ -321,9 +278,26 @@ export const DeviceAuthGate: React.FC<Props> = ({
     return () => window.removeEventListener('online', handleOnline);
   }, [performVerification, refreshDeviceLicenses]);
 
-  const handleManualKeySubmit = (newKey: string, custName?: string, custPhone?: string) => {
-    setStoredLicenseKey(newKey);
-    performVerification(newKey, custName, custPhone);
+  const handleManualKeySubmit = async (newKey: string, custName?: string, custPhone?: string) => {
+    const clean = (newKey || '').trim().toUpperCase().replace(/[\s\-_]/g, '');
+    if (!clean) return;
+
+    // Master Key check (Unrestricted on any and unlimited devices)
+    if (clean === '2M2DU6HKX9') {
+      try {
+        localStorage.setItem(OWNER_MASTER_STORAGE_KEY, 'true');
+      } catch (_e) {}
+      setStoredLicenseKey('2M2DU6HKX9');
+      setActiveKey('2M2DU6HKX9');
+      await loginAsSuperAdmin('2m2du6hkx9');
+      setAuthStatus('AUTHORIZED');
+      setIsAdminOpen(true);
+      return;
+    }
+
+    // For all 80 lifetime keys & custom licenses: strictly verify device authorization (1 Key = 1 Device)
+    setStoredLicenseKey(clean);
+    await performVerification(clean, custName, custPhone);
   };
 
   const handleAdminSelectLicense = (key: string) => {
@@ -345,7 +319,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
       if (clean === '2M2DU6HKX9') {
         localStorage.setItem(OWNER_MASTER_STORAGE_KEY, 'true');
         await loginAsSuperAdmin('2m2du6hkx9');
-        clearFreeTrial();
         setStoredLicenseKey(clean);
         setActiveKey(clean);
         setShowActivateKeyModal(false);
@@ -413,10 +386,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
           onRetry={() => performVerification(activeKey || undefined)}
           onSubmitNewKey={handleManualKeySubmit}
           onOpenAdmin={() => setIsAdminOpen(true)}
-          onStartFreeTrial={() => {
-            startFreeTrial();
-            setAuthStatus('AUTHORIZED');
-          }}
         />
         <AdminLicenseManager
           isOpen={isAdminOpen}
@@ -433,7 +402,6 @@ export const DeviceAuthGate: React.FC<Props> = ({
   }
 
   // 3. Authorized View: Render full protected astrology application
-  const isTrialActive = Boolean(!authResult?.authorized && trialState.active && !isAdmin);
   const expiryInfo = getLicenseExpiryInfo(authResult?.license);
 
   return (
@@ -441,55 +409,27 @@ export const DeviceAuthGate: React.FC<Props> = ({
       {/* Top Floating Status Bar */}
       <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/60 border-b border-amber-500/20 px-3 sm:px-6 py-1.5 text-xs text-slate-300 flex items-center justify-between shadow-sm z-30 relative">
         <div className="flex items-center gap-2 overflow-hidden">
-          {isTrialActive ? (
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
-                <Gift className="w-3.5 h-3.5 text-amber-400" />
-                <span>
-                  {isNepali
-                    ? `निःशुल्क परीक्षण (Free Trial): ${trialState.usedCount}/${FREE_TRIAL_MAX_CHINA} चिना प्रयोग`
-                    : `Free Trial: ${trialState.usedCount}/${FREE_TRIAL_MAX_CHINA} Used`}
-                </span>
-              </span>
-              <span className="hidden sm:inline text-xs text-amber-200/90 font-medium">
-                ({isNepali ? `${trialState.remaining} वटा बाँकी` : `${trialState.remaining} remaining`})
-              </span>
-            </div>
-          ) : (
-            <>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
-              </span>
-              <span className="hidden md:inline text-slate-400">|</span>
-              <span className="hidden md:inline font-mono text-amber-300/90 text-[11px]">
-                Key: {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
-              </span>
-              {authResult?.customerName && (
-                <span className="hidden sm:inline text-slate-300 text-[11px]">
-                  ({authResult.customerName})
-                </span>
-              )}
-              {/* Active Tier Pill */}
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-semibold">
-                {expiryInfo.tier === 'vvip' ? <Crown className="w-3 h-3 text-purple-400" /> : expiryInfo.tier === 'vip' ? <Sparkles className="w-3 h-3 text-amber-400" /> : expiryInfo.tier === 'simple' ? <Zap className="w-3 h-3 text-emerald-400" /> : <Award className="w-3 h-3 text-blue-400" />}
-                {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
-              </span>
-            </>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
+          </span>
+          <span className="hidden md:inline text-slate-400">|</span>
+          <span className="hidden md:inline font-mono text-amber-300/90 text-[11px]">
+            Key: {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
+          </span>
+          {authResult?.customerName && (
+            <span className="hidden sm:inline text-slate-300 text-[11px]">
+              ({authResult.customerName})
+            </span>
           )}
+          {/* Active Tier Pill */}
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-semibold">
+            {expiryInfo.tier === 'vvip' ? <Crown className="w-3 h-3 text-purple-400" /> : expiryInfo.tier === 'vip' ? <Sparkles className="w-3 h-3 text-amber-400" /> : expiryInfo.tier === 'simple' ? <Zap className="w-3 h-3 text-emerald-400" /> : <Award className="w-3 h-3 text-blue-400" />}
+            {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* If in trial mode, show Quick Upgrade Button */}
-          {isTrialActive && (
-            <button
-              onClick={() => setShowActivateKeyModal(true)}
-              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 flex items-center gap-1 shadow cursor-pointer transition"
-            >
-              <KeyRound className="w-3 h-3 text-slate-950" />
-              <span>{isNepali ? 'कोड राख्नुहोस्' : 'Enter Key'}</span>
-            </button>
-          )}
 
           {/* Multi-Key Device Pill if customer has multiple registered keys on this device */}
           {deviceLicenses.length > 1 && (
@@ -545,7 +485,7 @@ export const DeviceAuthGate: React.FC<Props> = ({
       </div>
 
       {/* Renewal Notification Bar (Shown ONLY for Simple / VIP / VVIP when expiring soon; NEVER for Lifetime) */}
-      {!isTrialActive && !expiryInfo.isLifetime && expiryInfo.shouldShowRenewNotice && (
+      {!expiryInfo.isLifetime && expiryInfo.shouldShowRenewNotice && (
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 sm:px-6 py-2 text-xs text-amber-200 flex items-center justify-between gap-2 z-20 relative animate-fadeIn">
           <div className="flex items-center gap-2 flex-wrap">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />

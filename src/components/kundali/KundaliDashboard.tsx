@@ -299,57 +299,143 @@ export const KundaliDashboard: React.FC<KundaliDashboardProps> = ({
 
       {!hasAccessToFullKundali ? (
         <div className="space-y-6">
-          {/* Unlocked Basic Charts & Planetary Preview */}
-          <div className="bg-amber-950/40 border border-amber-800/60 rounded-2xl p-5 shadow-lg space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-amber-800/50">
+          {/* Unlocked 3 Basic Charts & Planetary Preview */}
+          <div className="bg-amber-950/40 border border-amber-800/60 rounded-2xl p-5 shadow-lg space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-amber-800/50 gap-3">
               <div>
-                <h3 className="font-serif font-bold text-amber-100 text-base flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? '१. मुख्य जन्म लग्न कुण्डली (निःशुल्क पूर्वावलोकन)' : '1. Main Birth Lagna Chart (Free Preview)'}</span>
+                <h3 className="font-serif font-bold text-amber-100 text-base sm:text-lg flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                  <span>
+                    {lang === 'ne'
+                      ? 'निःशुल्क ३ कुण्डली (१. जन्म लग्न, २. चन्द्र कुण्डली, ३. नवमांश)'
+                      : '3 Free Charts (1. Lagna, 2. Moon Chart, 3. Navamsha)'}
+                  </span>
                 </h3>
-                <p className="text-xs text-amber-300/80">
-                  {lang === 'ne' ? 'आधारभूत लग्न चक्र तथा ग्रह स्थिति' : 'Basic Lagna Chart and Planetary Degrees'}
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  {lang === 'ne'
+                    ? 'तपाईंले निःशुल्क ३ वटा मुख्य कुण्डली र ग्रह स्पष्ट स्थिति हेर्न सक्नुहुन्छ। बाँकी १४ वर्ग कुण्डली, परम्परागत चिना र फलित हेर्न सदस्यता लिनुहोस् वा Lifetime Key हाल्नुहोस्।'
+                    : 'Preview the 3 core Kundalis and Planetary positions. To open all 17 Kundali, Cheena & Phalit, please activate a Lifetime Key or subscription.'}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => openSubscriptionModal()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold text-xs shadow hover:brightness-110 active:scale-95"
+                onClick={() => openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र परम्परागत चिना' : '17 Kundali & Cheena')}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 whitespace-nowrap self-start sm:self-auto cursor-pointer"
               >
-                <Crown className="w-3.5 h-3.5" />
-                <span>{lang === 'ne' ? 'सम्पूर्ण कुण्डली अनलक' : 'Unlock Full Kundali'}</span>
+                <Crown className="w-4 h-4" />
+                <span>{lang === 'ne' ? '१७ कुण्डली र चिना अनलक गर्नुहोस्' : 'Unlock All 17 Kundali & Cheena'}</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <KundaliChartNorth
-                houses={
-                  d1Chart
-                    ? d1Chart.houses.map((h) => ({
-                        house: h.houseNum,
-                        sign: h.signNe,
-                        planets: h.planets
-                      }))
-                    : []
-                }
-                planetPositions={planetList}
-                lagnaSignIndex={d1Chart?.houses[0]?.signIndex || 0}
-                lang={lang}
-                title={lang === 'ne' ? '१. जन्म लग्न कुण्डली (D1 Rashi Chart)' : '1. Main Birth Rashi Chart (D1)'}
-                activePlanetKeys={activePlanetKeys}
-                activeDashaTitle={activeDashaTitle}
-              />
+            {/* 3 Free Charts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {/* 1. Main Lagna D1 Chart */}
+              <div className="bg-stone-950/60 p-4 rounded-xl border border-amber-800/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-serif font-bold text-amber-300">
+                    {lang === 'ne' ? '१. जन्म लग्न कुण्डली (D1)' : '1. Birth Lagna Chart (D1)'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60 font-mono">
+                    {lang === 'ne' ? 'निःशुल्क (FREE)' : 'FREE'}
+                  </span>
+                </div>
+                <KundaliChartNorth
+                  houses={
+                    d1Chart
+                      ? d1Chart.houses.map((h) => ({
+                          house: h.houseNum,
+                          sign: h.signNe,
+                          planets: h.planets
+                        }))
+                      : []
+                  }
+                  planetPositions={planetList}
+                  lagnaSignIndex={d1Chart?.houses[0]?.signIndex || 0}
+                  lang={lang}
+                  title={lang === 'ne' ? '१. जन्म लग्न कुण्डली (D1)' : '1. Birth Lagna Chart (D1)'}
+                  activePlanetKeys={activePlanetKeys}
+                  activeDashaTitle={activeDashaTitle}
+                />
+              </div>
+
+              {/* 2. Chandra Kundali (Moon Chart) */}
+              <div className="bg-stone-950/60 p-4 rounded-xl border border-amber-800/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-serif font-bold text-amber-300">
+                    {lang === 'ne' ? '२. चन्द्र कुण्डली (Moon Chart)' : '2. Chandra Kundali (Moon Chart)'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60 font-mono">
+                    {lang === 'ne' ? 'निःशुल्क (FREE)' : 'FREE'}
+                  </span>
+                </div>
+                {(() => {
+                  const rashiNeArr = ['मेष', 'वृष', 'मिथुन', 'कर्क', 'सिंह', 'कन्या', 'तुला', 'वृश्चिक', 'धनु', 'मकर', 'कुम्भ', 'मीन'];
+                  const moonP = planetList.find((p) => p.id === 'moon');
+                  const moonSignIdx = moonP?.signIndex ?? (d1Chart?.houses[0]?.signIndex || 0);
+                  const chandraHouses = Array.from({ length: 12 }, (_, i) => {
+                    const signIdx = (moonSignIdx + i) % 12;
+                    const planetsInSign = planetList.filter((p) => p.signIndex === signIdx).map((p) => p.nepaliName);
+                    return {
+                      house: i + 1,
+                      sign: rashiNeArr[signIdx],
+                      planets: planetsInSign
+                    };
+                  });
+                  return (
+                    <KundaliChartNorth
+                      houses={chandraHouses}
+                      planetPositions={planetList}
+                      lagnaSignIndex={moonSignIdx}
+                      lang={lang}
+                      title={lang === 'ne' ? '२. चन्द्र कुण्डली (Moon Chart)' : '2. Chandra Kundali (Moon Chart)'}
+                      activePlanetKeys={activePlanetKeys}
+                    />
+                  );
+                })()}
+              </div>
+
+              {/* 3. Navamsha D9 Chart */}
+              <div className="bg-stone-950/60 p-4 rounded-xl border border-amber-800/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-serif font-bold text-amber-300">
+                    {lang === 'ne' ? '३. नवमांश कुण्डली (D9)' : '3. Navamsha Chart (D9)'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60 font-mono">
+                    {lang === 'ne' ? 'निःशुल्क (FREE)' : 'FREE'}
+                  </span>
+                </div>
+                <KundaliChartNorth
+                  houses={
+                    d9Chart
+                      ? d9Chart.houses.map((h) => ({
+                          house: h.houseNum,
+                          sign: h.signNe,
+                          planets: h.planets
+                        }))
+                      : []
+                  }
+                  planetPositions={planetList}
+                  lagnaSignIndex={d9Chart?.houses[0]?.signIndex || 0}
+                  lang={lang}
+                  title={lang === 'ne' ? '३. नवमांश कुण्डली (D9 Navamsha)' : '3. Navamsha Chart (D9)'}
+                  activePlanetKeys={activePlanetKeys}
+                />
+              </div>
+            </div>
+
+            {/* Planetary Positions Table */}
+            <div className="pt-2">
               <PlanetaryPositionsTable planetPositions={planetList} lang={lang} />
             </div>
           </div>
 
           {/* Prominent Subscription Gate Card for full Cheena, 16 Divisional Charts, Dasha and Phalit */}
           <SubscriptionGateCard
-            featureName={lang === 'ne' ? 'परम्परागत चिना, १६ वर्ग कुण्डली तथा विस्तृत फलित' : 'Traditional Cheena, 16 Divisional Charts & Phalit'}
+            featureName={lang === 'ne' ? '१७ कुण्डली, परम्परागत चिना तथा सम्पूर्ण फलित' : '17 Kundali, Traditional Cheena & Complete Phalit'}
             featureDescription={
               lang === 'ne'
-                ? 'सम्पूर्ण परम्परागत नेपाली चिना (A4/Legal प्रिन्ट), विंशोत्तरी दशा सोपान, त्रिभागी दशा, योगिनी दशा, ग्रहबल तथा वार्षिक १२ भाव फलित अनलक गर्न आफ्नो अनुकूल योजना छनौट गर्नुहोस्।'
-                : 'Unlock the complete formal Nepali Traditional Cheena, 16 Divisional Charts, Vimshottari/Tribhagi/Yogini Dashas, and deep annual 12-Bhava predictions.'
+                ? 'सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग D1 देखि D60), विंशोत्तरी महादशा-अन्तर्दशा, त्रिभागी दशा, योगिनी दशा, ग्रहबल तथा A4 साइजको परम्परागत नेपाली चिना डाउनलोड तथा प्रिन्ट गर्न आफ्नो सदस्यता योजना छनौट गर्नुहोस् वा Lifetime Key हाल्नुहोस्।'
+                : 'Unlock all 16 Divisional Charts (Shodashvarga D1 to D60), Vimshottari/Tribhagi/Yogini Dashas, Graha Bala, and traditional Cheena PDF print.'
             }
           />
         </div>

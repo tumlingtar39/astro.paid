@@ -32,8 +32,6 @@ import {
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { getStoredLicenseKey } from '../lib/deviceSecurity';
-import { recordTrialChinaGeneration, getTrialState, FREE_TRIAL_MAX_CHINA } from '../lib/trialService';
-import { TrialLimitModal } from './subscription/TrialLimitModal';
 
 interface SavedKundali {
   id: string;
@@ -58,14 +56,12 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
   onKundaliChange,
   onOpenChina17
 }) => {
-  const { isSubscribed, isTrialLimitReached, openSubscriptionModal } = useSubscription();
+  const { isSubscribed, openSubscriptionModal } = useSubscription();
   const { isAdmin } = useAuth();
   const [currentInput, setCurrentInput] = useState<KundaliInput | null>(activeInput || null);
   const [currentResult, setCurrentResult] = useState<KundaliResult | null>(activeKundali || null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [calcError, setCalcError] = useState<string | null>(null);
-  const [trialNotice, setTrialNotice] = useState<string | null>(null);
-  const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   const [savedKundalis, setSavedKundalis] = useState<SavedKundali[]>([]);
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const [chartStyle, setChartStyle] = useState<'north' | 'south'>('north');
@@ -147,34 +143,6 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
 
   const handleCalculate = (input: KundaliInput) => {
     setCalcError(null);
-    setTrialNotice(null);
-
-    // Check if user is licensed/subscribed/admin or within 3-China Free Trial
-    const storedKey = getStoredLicenseKey();
-    const isLicensedUser = isSubscribed || isAdmin || Boolean(storedKey && storedKey.length >= 8);
-
-    if (!isLicensedUser) {
-      const chinaId = `${input.name}_${input.birthDate}_${input.birthTime}_${input.birthPlace}`.toLowerCase().trim();
-      const trialCheck = recordTrialChinaGeneration(chinaId);
-
-      if (!trialCheck.allowed) {
-        setCalcError(
-          lang === 'ne'
-            ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भयो। ३ पटक भन्दा बढी १७ कुण्डली र चिना बनाउन सदस्यता लिनु आवश्यक छ।'
-            : 'You have reached the 3 Free Trial limit. Subscription is required to create or open 17 Kundali & China beyond 3 times.'
-        );
-        setShowTrialLimitModal(true);
-        return;
-      }
-
-      if (trialCheck.usedCount > 0) {
-        setTrialNotice(
-          lang === 'ne'
-            ? `निःशुल्क परीक्षण: ${trialCheck.usedCount}/${FREE_TRIAL_MAX_CHINA} चिना प्रयोग भयो (बाँकी: ${trialCheck.remaining})`
-            : `Free Trial: ${trialCheck.usedCount}/${FREE_TRIAL_MAX_CHINA} used (${trialCheck.remaining} remaining)`
-        );
-      }
-    }
 
     setIsCalculating(true);
     setTimeout(async () => {
@@ -322,35 +290,12 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
         </div>
       </div>
 
-      {trialNotice && !calcError && (
-        <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-200 text-xs flex items-center justify-between gap-2 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <Gift className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="font-medium">{trialNotice}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowTrialLimitModal(true)}
-            className="text-[11px] px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shrink-0"
-          >
-            {lang === 'ne' ? 'कोड राख्नुहोस्' : 'Enter Code'}
-          </button>
-        </div>
-      )}
-
       {calcError && (
         <div className="p-4 bg-red-950/80 border border-red-700/60 rounded-xl text-red-200 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
             <span>{calcError}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowTrialLimitModal(true)}
-            className="px-3 py-1 bg-red-800 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition shrink-0"
-          >
-            {lang === 'ne' ? 'अनलक गर्नुहोस्' : 'Unlock'}
-          </button>
         </div>
       )}
 
@@ -664,13 +609,6 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
           </div>
         </div>
       )}
-
-      {/* Free Trial Limit Modal */}
-      <TrialLimitModal
-        isOpen={showTrialLimitModal}
-        onClose={() => setShowTrialLimitModal(false)}
-        lang={lang}
-      />
     </div>
   );
 };

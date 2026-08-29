@@ -17,7 +17,6 @@ import { DeviceAuthorizationResult, Language, LicenseRecord } from '../../types'
 import { getOrCreateDeviceId } from '../../lib/deviceSecurity';
 import { getAllDeviceLicenses } from '../../lib/licenseService';
 import { useAuth } from '../../context/AuthContext';
-import { getTrialState, startFreeTrial, FREE_TRIAL_MAX_CHINA, TrialState } from '../../lib/trialService';
 
 interface Props {
   authResult: DeviceAuthorizationResult | null;
@@ -25,7 +24,6 @@ interface Props {
   onRetry: () => void;
   onSubmitNewKey: (key: string, customerName?: string, customerPhone?: string) => void;
   onOpenAdmin?: () => void;
-  onStartFreeTrial?: () => void;
 }
 
 export const UnauthorizedDeviceScreen: React.FC<Props> = ({
@@ -34,7 +32,6 @@ export const UnauthorizedDeviceScreen: React.FC<Props> = ({
   onRetry,
   onSubmitNewKey,
   onOpenAdmin,
-  onStartFreeTrial,
 }) => {
   const { loginAsSuperAdmin } = useAuth();
 
@@ -44,23 +41,15 @@ export const UnauthorizedDeviceScreen: React.FC<Props> = ({
   const [copiedDevId, setCopiedDevId] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [savedDeviceLicenses, setSavedDeviceLicenses] = useState<LicenseRecord[]>([]);
-  const [trialState, setTrialState] = useState<TrialState>(() => getTrialState());
 
   const { deviceId } = getOrCreateDeviceId();
   const isNepali = language === 'ne';
 
-  // Load trial state and any previously registered keys on this device
+  // Load registered keys on this device
   useEffect(() => {
-    setTrialState(getTrialState());
     getAllDeviceLicenses(deviceId).then((list) => {
       setSavedDeviceLicenses(list);
     });
-
-    const handleTrialUpdate = (e: any) => {
-      setTrialState(e?.detail || getTrialState());
-    };
-    window.addEventListener('jyotish_trial_updated', handleTrialUpdate);
-    return () => window.removeEventListener('jyotish_trial_updated', handleTrialUpdate);
   }, [deviceId]);
 
   // Check URL or existing authResult on mount
@@ -109,24 +98,6 @@ export const UnauthorizedDeviceScreen: React.FC<Props> = ({
       );
     } finally {
       setTimeout(() => setIsSubmitting(false), 800);
-    }
-  };
-
-  const handleFreeTrialClick = () => {
-    if (trialState.exhausted) {
-      setFormError(
-        isNepali
-          ? 'तपाईंको ३ वटा निःशुल्क चिना (Free Trial) को सीमा पूरा भइसकेको छ। कृपया एप खोल्न आधिकारिक कोड प्रविष्ट गर्नुहोस्।'
-          : 'You have used all 3 free trial China. Please enter an activation code to unlock.'
-      );
-      return;
-    }
-
-    startFreeTrial();
-    if (onStartFreeTrial) {
-      onStartFreeTrial();
-    } else {
-      onRetry();
     }
   };
 
@@ -206,49 +177,6 @@ export const UnauthorizedDeviceScreen: React.FC<Props> = ({
             <span>{formError}</span>
           </div>
         )}
-
-        {/* FREE TRIAL OPTION (३ वटा सम्म चिना बनाउन मिल्ने) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-lg relative overflow-hidden group">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <Gift className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-sm text-amber-200 font-serif">
-                  {isNepali ? 'निःशुल्क परीक्षण (Free Trial)' : 'Free Trial Mode'}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-                  {isNepali ? `${FREE_TRIAL_MAX_CHINA} चिना सम्म` : `Up to ${FREE_TRIAL_MAX_CHINA} China`}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300">
-                {trialState.exhausted
-                  ? (isNepali ? '३/३ वटा निःशुल्क चिना प्रयोग भइसक्यो।' : '3 of 3 free trials used.')
-                  : isNepali
-                  ? `सफ्टवेयर जाँच्न ३ वटा सम्म चिना निःशुल्क बनाउनुहोस् (बाँकी: ${trialState.remaining})`
-                  : `Generate up to 3 kundali charts for free (Remaining: ${trialState.remaining})`}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleFreeTrialClick}
-              disabled={trialState.exhausted}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer shrink-0 ${
-                trialState.exhausted
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                  : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>
-                {trialState.exhausted
-                  ? (isNepali ? 'परीक्षण सकियो' : 'Trial Ended')
-                  : (isNepali ? 'निःशुल्क सुरु गर्नुहोस्' : 'Start Free Trial')}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
 
         {/* Pure Single Code Input Form */}
         <form onSubmit={handleActivationSubmit} className="p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 shadow-inner space-y-4">

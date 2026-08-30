@@ -65,33 +65,10 @@ export const DeviceAuthGate: React.FC<Props> = ({
     try {
       const isOwner = localStorage.getItem(OWNER_MASTER_STORAGE_KEY) === 'true' || getStoredLicenseKey() === '2M2DU6HKX9';
       if (isOwner) return 'AUTHORIZED';
-      if (localStorage.getItem('astro_lifetime_active') === 'true') {
-        return 'AUTHORIZED';
-      }
-      const stored = getStoredLicenseKey();
-      if (stored) {
-        // Fast instant unlock on authorized device without annoying login prompts
-        return 'AUTHORIZED';
-      }
     } catch (_e) {}
-    return 'UNAUTHORIZED';
+    return 'INITIALIZING';
   });
-  const [authResult, setAuthResult] = useState<DeviceAuthorizationResult | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = getStoredLicenseKey();
-    if (stored) {
-      const { deviceId } = getOrCreateDeviceId();
-      return {
-        authorized: true,
-        status: 'AUTHORIZED',
-        licenseKey: stored,
-        deviceId,
-        messageNe: 'उपकरण प्रमाणीकरण सफल भयो।',
-        messageEn: 'Device verified successfully.',
-      };
-    }
-    return null;
-  });
+  const [authResult, setAuthResult] = useState<DeviceAuthorizationResult | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return getStoredLicenseKey();
@@ -302,13 +279,11 @@ export const DeviceAuthGate: React.FC<Props> = ({
       return;
     }
 
-    // For all 80 lifetime keys & custom licenses: strictly verify device authorization (1 Key = 1 Device)
-    setStoredLicenseKey(clean);
+    // Strictly verify device authorization (1 Key = 1 Device)
     await performVerification(clean, custName, custPhone);
   };
 
   const handleAdminSelectLicense = (key: string) => {
-    setStoredLicenseKey(key);
     setIsAdminOpen(false);
     performVerification(key);
   };
@@ -343,10 +318,8 @@ export const DeviceAuthGate: React.FC<Props> = ({
         return;
       }
 
-      await handleManualKeySubmit(clean);
+      await performVerification(clean);
       setShowActivateKeyModal(false);
-      setAuthStatus('AUTHORIZED');
-      setActiveKey(clean);
       setManualKeyInput('');
     } catch (err: any) {
       setManualKeyError(err?.message || (isNepali ? 'एक्टिभेसन गर्न सकिएन।' : 'Activation failed.'));
@@ -355,7 +328,16 @@ export const DeviceAuthGate: React.FC<Props> = ({
     }
   };
 
-  const isDeviceAuthorized = authStatus === 'AUTHORIZED' && (authResult?.authorized || isSubscribed);
+  const isOwnerMasterDevice = typeof window !== 'undefined' && (
+    localStorage.getItem(OWNER_MASTER_STORAGE_KEY) === 'true' ||
+    getStoredLicenseKey() === '2M2DU6HKX9'
+  );
+
+  const isDeviceAuthorized = authStatus === 'AUTHORIZED' && Boolean(
+    isAdmin ||
+    isOwnerMasterDevice ||
+    authResult?.authorized
+  );
   const expiryInfo = getLicenseExpiryInfo(authResult?.license);
 
   // 1. Initializing / Verifying state with stored key

@@ -12,6 +12,7 @@ import { db, ensureFirebaseAuth } from './firebase';
 import { LicenseRecord, DeviceAuthorizationResult, DevicePaymentRequest } from '../types';
 import {
   getDeviceMetadata,
+  getStoredLicenseKey,
   setStoredLicenseKey,
   addStoredLicenseKey,
   getStoredLicenseKeysList,
@@ -903,11 +904,17 @@ export async function verifyOrActivateLicense(
           // If this key was wrongfully saved locally, purge it from local device
           const map = getLocalLicensesMap();
           if (map.has(licenseKey)) {
-            const rec = map.get(licenseKey);
-            if (rec && rec.authorizedDeviceId && rec.authorizedDeviceId !== meta.deviceId) {
-              map.delete(licenseKey);
-              saveLocalLicensesMap(map);
-            }
+            map.delete(licenseKey);
+            saveLocalLicensesMap(map);
+          }
+          removeStoredLicenseKey(licenseKey);
+          if (getStoredLicenseKey() === licenseKey) {
+            clearStoredLicenseKey();
+          }
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('astrology_user_subscription');
+            localStorage.removeItem('astro_active_key');
+            localStorage.removeItem('astro_lifetime_active');
           }
           return data;
         }
@@ -936,20 +943,48 @@ export async function verifyOrActivateLicense(
   const localRecord = localMap.get(licenseKey);
 
   // Determine active license: Cloud record has highest priority for cross-device binding
-  let targetRecord: LicenseRecord | null = cloudRecord || localRecord || null;
+  let targetRecord: LicenseRecord | null = cloudRecord || (localRecord && localRecord.authorizedDeviceId === meta.deviceId ? localRecord : null);
 
-  // Check built-in seeds if not yet saved in cloud or local
+  // If online server check was missed and cloud is available, or if cloud record exists:
+  if (cloudRecord) {
+    targetRecord = cloudRecord;
+  }
+
+  // If no record is found in cloud or already bound locally:
+  // For offline/unreachable conditions, check if we can safely activate
   if (!targetRecord) {
+    // Check built-in seeds
     const seed = SEED_LICENSES.find((s) => s.licenseKey === licenseKey);
     if (seed) {
+      // NOTE: Seed key activation REQUIRES server/cloud verification so that 2 devices cannot both bind the same seed!
+      if (!navigator.onLine) {
+        return {
+          authorized: false,
+          status: 'OFFLINE_UNVERIFIED',
+          licenseKey,
+          deviceId: meta.deviceId,
+          messageNe: 'नयाँ कोड पहिलो पटक यस उपकरणमा दर्ता (बाइन्ड) गर्न इन्टरनेट सम्पर्क आवश्यक छ।',
+          messageEn: 'Internet connection is required for first-time key registration to bind to this device.',
+        };
+      }
       targetRecord = { ...seed };
     }
   }
 
-  // Check cryptographic signed key (Guaranteed 100% instant offline & Vercel activation on any customer phone)
+  // Check cryptographic signed key
   if (!targetRecord) {
     const signedCheck = verifySignedLicenseKey(licenseKey);
     if (signedCheck.valid) {
+      if (!navigator.onLine) {
+        return {
+          authorized: false,
+          status: 'OFFLINE_UNVERIFIED',
+          licenseKey,
+          deviceId: meta.deviceId,
+          messageNe: 'नयाँ कोड पहिलो पटक यस उपकरणमा दर्ता (बाइन्ड) गर्न इन्टरनेट सम्पर्क आवश्यक छ।',
+          messageEn: 'Internet connection is required for first-time key registration to bind to this device.',
+        };
+      }
       targetRecord = {
         id: licenseKey,
         licenseKey: licenseKey,
@@ -1204,10 +1239,11 @@ export async function getAllDeviceLicenses(explicitDeviceId?: string): Promise<L
   const storedKeys = getStoredLicenseKeysList();
   const resultMap = new Map<string, LicenseRecord>();
 
-  // 1. Check all stored keys from device history
+  // 1. Check stored keys from device history - ONLY if strictly bound to THIS device
   for (const k of storedKeys) {
+    if (isSecretMasterKey(k)) continue;
     const lic = await getLicenseDetails(k);
-    if (lic && lic.licenseKey) {
+    if (lic && lic.licenseKey && lic.authorizedDeviceId === currentDeviceId && lic.status === 'active') {
       resultMap.set(lic.licenseKey.toUpperCase(), lic);
     }
   }
@@ -1215,7 +1251,7 @@ export async function getAllDeviceLicenses(explicitDeviceId?: string): Promise<L
   // 2. Query local map for any records bound to this device ID
   const localMap = getLocalLicensesMap();
   localMap.forEach((lic) => {
-    if (lic.authorizedDeviceId === currentDeviceId && lic.licenseKey) {
+    if (lic.authorizedDeviceId === currentDeviceId && lic.licenseKey && lic.status === 'active' && !isSecretMasterKey(lic.licenseKey)) {
       resultMap.set(lic.licenseKey.toUpperCase(), lic);
     }
   });
@@ -1228,7 +1264,7 @@ export async function getAllDeviceLicenses(explicitDeviceId?: string): Promise<L
       const snapshot = await getDocs(q);
       snapshot.forEach((snap) => {
         const lic = snap.data() as LicenseRecord;
-        if (lic && lic.licenseKey && lic.authorizedDeviceId === currentDeviceId) {
+        if (lic && lic.licenseKey && lic.authorizedDeviceId === currentDeviceId && lic.status === 'active' && !isSecretMasterKey(lic.licenseKey)) {
           resultMap.set(lic.licenseKey.toUpperCase(), lic);
         }
       });
@@ -1252,12 +1288,14 @@ export async function getAllDeviceLicenses(explicitDeviceId?: string): Promise<L
  * If the customer used multiple links/keys, this ensures the device ALWAYS opens!
  */
 export async function findBestActiveLicenseForDevice(): Promise<LicenseRecord | null> {
-  const licenses = await getAllDeviceLicenses();
+  const meta = getDeviceMetadata();
+  const currentDeviceId = meta.deviceId;
+  const licenses = await getAllDeviceLicenses(currentDeviceId);
   const nowTime = Date.now();
 
   for (const lic of licenses) {
-    if (lic.status === 'revoked') continue;
-    if (lic.status === 'expired') continue;
+    if (lic.authorizedDeviceId !== currentDeviceId) continue;
+    if (lic.status !== 'active') continue;
     if (lic.expiresAt && new Date(lic.expiresAt).getTime() < nowTime) continue;
     return lic;
   }

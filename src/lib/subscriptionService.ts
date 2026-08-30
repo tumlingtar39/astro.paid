@@ -189,7 +189,10 @@ export function getStoredSubscription(): UserSubscription | null {
   if (typeof window === 'undefined') return null;
   try {
     // 0. If master owner key is active
-    if (localStorage.getItem('astro_master_owner_key_authorized') === 'true') {
+    const isOwnerMaster = localStorage.getItem('__jyotish_owner_master_device__') === 'true' ||
+      localStorage.getItem('astro_master_owner_key_authorized') === 'true' ||
+      localStorage.getItem('__jyotish_active_license_key__') === '2M2DU6HKX9';
+    if (isOwnerMaster) {
       return {
         planId: 'lifetime',
         status: 'active',
@@ -224,9 +227,6 @@ export function saveSubscription(sub: UserSubscription): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sub));
-    if (sub.planId === 'lifetime' && sub.status === 'active') {
-      localStorage.setItem('astro_lifetime_active', 'true');
-    }
     
     // Dispatch global event for instant UI re-render
     try {
@@ -409,11 +409,11 @@ export function redeemVoucherCode(
         const list = JSON.parse(raw);
         const lic = Array.isArray(list) ? list.find((l: any) => l?.licenseKey?.toUpperCase() === clean) : null;
         if (lic) {
-          if (lic.authorizedDeviceId && lic.authorizedDeviceId !== currentDeviceId) {
+          if (!lic.authorizedDeviceId || lic.authorizedDeviceId !== currentDeviceId || lic.status !== 'active') {
             return {
               success: false,
-              messageNe: '⚠️ अनधिकृत पहुँच रोकियो: यो कोड पहिले नै अर्को डिभाइसमा दर्ता भइसकेको छ। १ कोड = १ डिभाइस मात्र मान्य छ।',
-              messageEn: 'Unauthorized Access Blocked: This license is locked to another device. 1 Key = 1 Device policy strictly enforced.'
+              messageNe: '⚠️ अनधिकृत पहुँच रोकियो: यो कोड यस डिभाइसमा दर्ता छैन वा अर्को डिभाइसमा बाँधिएको छ। १ कोड = १ डिभाइस नीति कडाइका साथ लागू गरिएको छ।',
+              messageEn: 'Unauthorized Access Blocked: This license is not bound to this device or is locked to another device. 1 Key = 1 Device policy strictly enforced.'
             };
           }
 

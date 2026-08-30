@@ -787,3 +787,19 @@ export interface DeviceAuthorizationResult {
   license?: LicenseRecord | null;
 }
 
+export interface DeviceActivationLog {
+  id: string;
+  licenseKey: string;
+  deviceId: string;
+  authorizedDeviceId?: string | null;
+  previousDeviceId?: string | null;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  action: 'activated' | 'verified' | 'blocked_duplicate' | 'reset' | 'revoked';
+  timestamp: string;
+  userAgent?: string;
+  ip?: string;
+  deviceInfo?: any;
+}
+

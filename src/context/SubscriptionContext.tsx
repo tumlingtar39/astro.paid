@@ -86,10 +86,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
     } catch (_e) {}
 
-    if (existing) {
+    if (existing && (existing.voucherCode === '2M2DU6HKX9' || isSuperAdmin)) {
       setSubscription(existing);
+    } else {
+      // No active authorized license on this device
+      setSubscription(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('astrology_user_subscription');
+      }
     }
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     refreshSubscription();

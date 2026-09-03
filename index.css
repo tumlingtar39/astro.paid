@@ -1,0 +1,315 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------
+   GLOBAL THEME STYLES (Light Mode & Dark Mode Support)
+   ---------------------------------------------------- */
+
+:root {
+  --bg-primary: #1c130b;
+  --bg-secondary: #2a1b0e;
+  --text-primary: #fffbeb;
+  --text-secondary: #fde68a;
+  --border-primary: rgba(217, 119, 6, 0.4);
+  --card-bg: rgba(42, 27, 14, 0.85);
+}
+
+.theme-dark {
+  --bg-primary: #1c130b;
+  --bg-secondary: #2a1b0e;
+  --text-primary: #fffbeb;
+  --text-secondary: #fde68a;
+  --border-primary: rgba(217, 119, 6, 0.4);
+  --card-bg: rgba(42, 27, 14, 0.85);
+}
+
+.theme-light {
+  --bg-primary: #fcfaf6;
+  --bg-secondary: #f7f3ea;
+  --text-primary: #1e1b18;
+  --text-secondary: #78350f;
+  --border-primary: rgba(217, 119, 6, 0.25);
+  --card-bg: #ffffff;
+}
+
+/* Base body styles */
+body {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Light Mode Global Overrides */
+.theme-light {
+  background-color: #fcfaf6 !important;
+  color: #1e1b18 !important;
+}
+
+.theme-light body {
+  background-color: #fcfaf6 !important;
+  color: #1e1b18 !important;
+}
+
+/* App container background in Light Mode */
+.theme-light .app-root-container {
+  background-color: #fcfaf6 !important;
+  color: #1e1b18 !important;
+}
+
+.theme-light .app-bg-radial {
+  background: radial-gradient(ellipse at top, rgba(254, 243, 199, 0.6), rgba(253, 250, 246, 0.95), #fcfaf6) !important;
+}
+
+/* Light mode card containers & dark panels transformation */
+.theme-light .bg-amber-950,
+.theme-light .bg-amber-950\/95,
+.theme-light .bg-amber-950\/90,
+.theme-light .bg-amber-950\/85,
+.theme-light .bg-amber-950\/80,
+.theme-light .bg-amber-950\/75,
+.theme-light .bg-amber-950\/70,
+.theme-light .bg-amber-950\/60,
+.theme-light .bg-amber-950\/50,
+.theme-light .bg-amber-950\/40,
+.theme-light .bg-amber-950\/30,
+.theme-light .bg-amber-950\/20,
+.theme-light .bg-amber-900\/90,
+.theme-light .bg-amber-900\/80,
+.theme-light .bg-amber-900\/70,
+.theme-light .bg-amber-900\/60,
+.theme-light .bg-amber-900\/50,
+.theme-light .bg-\[\#1c130b\],
+.theme-light .bg-\[\#170f07\],
+.theme-light .bg-\[\#1a1008\],
+.theme-light .bg-\[\#1c1108\],
+.theme-light .bg-\[\#2d1a0b\],
+.theme-light .bg-\[\#2a1b0e\],
+.theme-light .bg-stone-900,
+.theme-light .bg-stone-950,
+.theme-light .bg-neutral-900,
+.theme-light .bg-neutral-950,
+.theme-light .bg-black,
+.theme-light .bg-black\/95,
+.theme-light .bg-black\/90,
+.theme-light .bg-black\/85,
+.theme-light .bg-black\/80,
+.theme-light .bg-black\/70,
+.theme-light .bg-black\/60,
+.theme-light .bg-black\/50,
+.theme-light .bg-black\/40 {
+  background-color: #ffffff !important;
+  color: #1e1b18 !important;
+}
+
+.theme-light .bg-amber-900\/40,
+.theme-light .bg-amber-900\/30,
+.theme-light .bg-amber-900\/20,
+.theme-light .bg-amber-900\/10 {
+  background-color: #fffbeb !important;
+  color: #1e1b18 !important;
+}
+
+/* Light mode header and navbars */
+.theme-light header {
+  background-color: rgba(255, 253, 247, 0.98) !important;
+  border-color: #fde68a !important;
+  color: #451a03 !important;
+  box-shadow: 0 4px 20px -2px rgba(217, 119, 6, 0.08) !important;
+}
+
+.theme-light .bg-gradient-to-r.from-amber-950.via-amber-900.to-amber-950,
+.theme-light .bg-gradient-to-r.from-amber-900\/60.via-amber-800\/40.to-amber-900\/60,
+.theme-light .bg-gradient-to-r.from-amber-950\/90.via-amber-900\/80.to-amber-950\/90 {
+  background: linear-gradient(to right, #fef3c7, #fde68a, #fef3c7) !important;
+  color: #78350f !important;
+}
+
+.theme-light .bg-gradient-to-r.from-amber-950.via-black.to-amber-950,
+.theme-light .bg-gradient-to-b.from-amber-950.to-black,
+.theme-light .bg-gradient-to-b.from-amber-950\/90.to-black,
+.theme-light .bg-gradient-to-b.from-amber-950\/85.to-black\/95,
+.theme-light .bg-gradient-to-b.from-amber-950\/80.to-black,
+.theme-light .bg-gradient-to-b.from-amber-950\/70.to-black\/90,
+.theme-light .bg-gradient-to-br.from-amber-950.to-black {
+  background: linear-gradient(to bottom, #ffffff, #fffdf8) !important;
+  color: #1e1b18 !important;
+  box-shadow: 0 4px 16px -2px rgba(180, 83, 9, 0.06) !important;
+}
+
+/* Light mode text colors adjustments */
+.theme-light .text-amber-50,
+.theme-light .text-amber-100 {
+  color: #1c1917 !important;
+}
+
+.theme-light .text-amber-200 {
+  color: #451a03 !important;
+}
+
+.theme-light .text-amber-300,
+.theme-light .text-amber-300\/80,
+.theme-light .text-amber-300\/90 {
+  color: #78350f !important;
+}
+
+.theme-light .text-amber-400,
+.theme-light .text-amber-400\/80,
+.theme-light .text-amber-400\/90 {
+  color: #92400e !important;
+}
+
+.theme-light .text-amber-500 {
+  color: #b45309 !important;
+}
+
+/* Light mode borders */
+.theme-light .border-amber-800,
+.theme-light .border-amber-800\/80,
+.theme-light .border-amber-800\/70,
+.theme-light .border-amber-800\/60,
+.theme-light .border-amber-800\/50,
+.theme-light .border-amber-800\/40,
+.theme-light .border-amber-800\/30,
+.theme-light .border-amber-800\/20,
+.theme-light .border-amber-900,
+.theme-light .border-amber-900\/80,
+.theme-light .border-amber-900\/60,
+.theme-light .border-amber-900\/40 {
+  border-color: #fde68a !important;
+}
+
+.theme-light .border-amber-700,
+.theme-light .border-amber-700\/80,
+.theme-light .border-amber-700\/60,
+.theme-light .border-amber-700\/50,
+.theme-light .border-amber-700\/40 {
+  border-color: #fcd34d !important;
+}
+
+.theme-light .border-amber-600,
+.theme-light .border-amber-600\/80,
+.theme-light .border-amber-600\/60,
+.theme-light .border-amber-600\/50,
+.theme-light .border-amber-600\/40 {
+  border-color: #fbbf24 !important;
+}
+
+/* Light mode input fields & selects */
+.theme-light input,
+.theme-light select,
+.theme-light textarea {
+  background-color: #ffffff !important;
+  color: #1e1b18 !important;
+  border-color: #d97706 !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #a8a29e !important;
+}
+
+/* Light mode Kundali Charts and SVGs */
+.theme-light svg text {
+  fill: #78350f !important;
+}
+
+.theme-light svg .kundali-bg {
+  fill: #fffdf9 !important;
+}
+
+.theme-light svg .kundali-line {
+  stroke: #d97706 !important;
+}
+
+/* Light mode footer */
+.theme-light footer {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+
+.theme-light footer .text-amber-100 {
+  color: #451a03 !important;
+}
+
+.theme-light footer .text-amber-400 {
+  color: #92400e !important;
+}
+
+/* Light mode tabs / pill buttons */
+.theme-light .nav-tab-inactive {
+  color: #78350f !important;
+}
+
+.theme-light .nav-tab-inactive:hover {
+  background-color: #fef3c7 !important;
+  color: #451a03 !important;
+}
+
+/* Accessibility bar in Light Mode */
+.theme-light .accessibility-bar-container,
+.theme-light aside[aria-label="Accessibility controls"] {
+  background: linear-gradient(to right, #fef3c7, #fef9c3, #fef3c7) !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+
+/* Light mode table cells, headers and rows */
+.theme-light table {
+  background-color: #ffffff !important;
+  color: #1e1b18 !important;
+}
+
+.theme-light th {
+  background-color: #fef3c7 !important;
+  color: #78350f !important;
+  border-color: #fde68a !important;
+}
+
+.theme-light td {
+  border-color: #fef3c7 !important;
+  color: #292524 !important;
+}
+
+.theme-light tr:hover td {
+  background-color: #fffdf5 !important;
+}
+
+/* Light mode Chat Assistant bubbles & inputs */
+.theme-light .chat-bubble-user {
+  background-color: #fef3c7 !important;
+  color: #78350f !important;
+  border-color: #fcd34d !important;
+}
+
+.theme-light .chat-bubble-assistant {
+  background-color: #ffffff !important;
+  color: #1e1b18 !important;
+  border-color: #fde68a !important;
+  box-shadow: 0 2px 12px -2px rgba(180, 83, 9, 0.08) !important;
+}
+
+/* Light mode bottom fixed nav on mobile */
+.theme-light .md\:hidden.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  border-color: #fde68a !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Light mode modals */
+.theme-light .fixed.inset-0.z-50 > div {
+  background-color: #ffffff !important;
+  color: #1e1b18 !important;
+  border-color: #fbbf24 !important;
+  box-shadow: 0 20px 40px -15px rgba(180, 83, 9, 0.2) !important;
+}
+
+/* Mobile safe padding support */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+/* Specific smooth transitions without heavy performance cost on mobile */
+button, a, input, select {
+  transition-property: background-color, border-color, color, opacity, transform;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+  -webkit-tap-highlight-color: transparent;
+}

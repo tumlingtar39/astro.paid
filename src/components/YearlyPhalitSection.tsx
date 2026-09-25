@@ -352,7 +352,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
               </span>
               <span className="bg-amber-900/60 text-amber-300 font-mono text-[11px] px-2.5 py-0.5 rounded-full border border-amber-700/60 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span>१२ भाव • दशा • विदेश देश विश्लेषण</span>
+                <span>{lang === 'ne' ? '१२ भाव • दशा • विदेश देश विश्लेषण' : '12 Houses • Dasha • Foreign Countries'}</span>
               </span>
             </div>
 
@@ -366,7 +366,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             <p className="text-xs sm:text-sm text-amber-300/90 flex flex-wrap items-center gap-x-4 gap-y-1 font-sans">
               <span>📅 {activeKundali.birthDate} ({activeKundali.birthTime})</span>
               <span>📍 {activeKundali.birthPlace}</span>
-              <span>🌟 {prediction.dashaInfo.periodSummaryNe}</span>
+              <span>🌟 {lang === 'ne' ? prediction.dashaInfo.periodSummaryNe : prediction.dashaInfo.periodSummaryEn}</span>
             </p>
           </div>
 
@@ -462,7 +462,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                 type="button"
                 onClick={() => setTargetYear((prev) => Math.max(birthYear, prev - 1))}
                 className="p-2 bg-amber-900/60 hover:bg-amber-800 text-amber-200 rounded-lg border border-amber-700/60 transition-all hover:scale-105"
-                title="अघिल्लो वर्ष (Previous Year)"
+                title={lang === 'ne' ? 'अघिल्लो वर्ष' : 'Previous Year'}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -473,7 +473,9 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                 </div>
                 <div className="font-serif font-bold text-xl sm:text-2xl text-amber-200 flex items-center justify-center gap-2">
                   <span>{targetYear} AD</span>
-                  <span className="text-sm text-amber-400">/ वि.सं. {toNepaliDigits(prediction.yearBS)}</span>
+                  <span className="text-sm text-amber-400">
+                    / {lang === 'ne' ? `वि.सं. ${toNepaliDigits(prediction.yearBS)}` : `BS ${prediction.yearBS}`}
+                  </span>
                 </div>
                 <div className="text-[11px] text-amber-300 font-sans font-medium">
                   {lang === 'ne' ? `जातकको उमेर: ${prediction.ageTextNe}` : `Native Age: ${prediction.ageTextEn}`}
@@ -484,7 +486,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                 type="button"
                 onClick={() => setTargetYear((prev) => prev + 1)}
                 className="p-2 bg-amber-900/60 hover:bg-amber-800 text-amber-200 rounded-lg border border-amber-700/60 transition-all hover:scale-105"
-                title="पछिल्लो वर्ष (Next Year)"
+                title={lang === 'ne' ? 'पछिल्लो वर्ष' : 'Next Year'}
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -518,11 +520,11 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
           {/* Age & Year Timeline Scrubber Slider */}
           <div className="px-2 space-y-1.5">
             <div className="flex justify-between text-[11px] text-amber-400/80">
-              <span>जन्म वर्ष ({birthYear} AD / ० वर्ष)</span>
+              <span>{lang === 'ne' ? `जन्म वर्ष (${birthYear} AD / ० वर्ष)` : `Birth Year (${birthYear} AD / 0 yrs)`}</span>
               <span className="font-bold text-amber-300">
-                वर्तमान चयन: {targetYear} AD (उमेर {prediction.ageYears} वर्ष)
+                {lang === 'ne' ? `वर्तमान चयन: ${targetYear} AD (उमेर ${prediction.ageYears} वर्ष)` : `Selected: ${targetYear} AD (Age ${prediction.ageYears} yrs)`}
               </span>
-              <span>दीर्घायु ({birthYear + 85} AD / ८५ वर्ष)</span>
+              <span>{lang === 'ne' ? `दीर्घायु (${birthYear + 85} AD / ८५ वर्ष)` : `Longevity (${birthYear + 85} AD / 85 yrs)`}</span>
             </div>
             <input
               type="range"
@@ -546,17 +548,21 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
               <span>{lang === 'ne' ? 'सक्रिय महादशा एवं अन्तर्दशा' : 'Active Dasha & Antardasha'}</span>
             </span>
             <span className="bg-amber-800/50 text-amber-200 px-2 py-0.5 rounded text-[10px]">
-              {prediction.dashaInfo.dashaLordDignityNe}
+              {lang === 'ne' ? prediction.dashaInfo.dashaLordDignityNe : prediction.dashaInfo.dashaLordDignityEn}
             </span>
           </div>
           <div className="font-serif font-bold text-lg text-amber-100">
-            {prediction.dashaInfo.mahadashaNe} महादशा
+            {lang === 'ne' ? `${prediction.dashaInfo.mahadashaNe} महादशा` : `${prediction.dashaInfo.mahadashaEn} Mahadasha`}
           </div>
           <p className="text-xs text-amber-300/90 font-sans">
-            👉 {prediction.dashaInfo.antardashaNe} अन्तर्दशा र {prediction.dashaInfo.pratyantardashaNe} प्रत्यन्तर
+            {lang === 'ne'
+              ? `👉 ${prediction.dashaInfo.antardashaNe} अन्तर्दशा र ${prediction.dashaInfo.pratyantardashaNe} प्रत्यन्तर`
+              : `👉 ${prediction.dashaInfo.antardashaEn} Antardasha & ${prediction.dashaInfo.pratyantardashaEn} Pratyantardasha`}
           </p>
           <div className="text-[11px] text-amber-400/80 pt-1 border-t border-amber-800/40">
-            {prediction.dashaInfo.mahadashaNe} कुण्डलीको {prediction.dashaInfo.mahadashaLordHouse} औँ भावमा अवस्थित छ।
+            {lang === 'ne'
+              ? `${prediction.dashaInfo.mahadashaNe} कुण्डलीको ${prediction.dashaInfo.mahadashaLordHouse} औँ भावमा अवस्थित छ।`
+              : `${prediction.dashaInfo.mahadashaEn} placed in House ${prediction.dashaInfo.mahadashaLordHouse} of chart.`}
           </div>
         </div>
 
@@ -570,7 +576,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             <span className="text-sm font-bold text-amber-200">{prediction.overallScore}%</span>
           </div>
           <div className="font-serif font-bold text-lg text-amber-100">
-            {prediction.overallRatingNe}
+            {lang === 'ne' ? prediction.overallRatingNe : prediction.overallRatingEn}
           </div>
           <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden border border-amber-800/60">
             <div
@@ -579,7 +585,9 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             />
           </div>
           <div className="text-[11px] text-amber-300/80 pt-1 border-t border-amber-800/40">
-            भाग्य र कर्मक्षेत्रमा {prediction.overallScore >= 75 ? 'तीव्र प्रगति' : 'धैर्य एवं सतर्कता'} आवश्यक।
+            {lang === 'ne'
+              ? `भाग्य र कर्मक्षेत्रमा ${prediction.overallScore >= 75 ? 'तीव्र प्रगति' : 'धैर्य एवं सतर्कता'} आवश्यक।`
+              : `In career and destiny: ${prediction.overallScore >= 75 ? 'Rapid progress indicated' : 'Patience and caution advised'}.`}
           </div>
         </div>
 
@@ -592,7 +600,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {prediction.keyAuspiciousMonthsNe.map((m, idx) => (
+            {(lang === 'ne' ? prediction.keyAuspiciousMonthsNe : prediction.keyAuspiciousMonthsEn).map((m, idx) => (
               <span
                 key={idx}
                 className="bg-amber-900/60 text-amber-200 border border-amber-700/60 px-2 py-0.5 rounded-md text-xs font-semibold"
@@ -602,7 +610,9 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             ))}
           </div>
           <p className="text-[11px] text-amber-400/80 pt-1 border-t border-amber-800/40">
-            नयाँ काम थाल्न, लगानी, विवाह र भिसा आवेदनका लागि सर्वोत्तम समय।
+            {lang === 'ne'
+              ? 'नयाँ काम थाल्न, लगानी, विवाह र भिसा आवेदनका लागि सर्वोत्तम समय।'
+              : 'Best period for initiating new endeavors, investments, marriage, and visas.'}
           </p>
         </div>
       </div>
@@ -729,7 +739,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-amber-400" />
               <input
                 type="text"
-                placeholder={lang === 'ne' ? 'विषय खोज्नुहोस् (उदा. भिसा, विवाह)...' : 'Search topic...'}
+                placeholder={lang === 'ne' ? 'विषय खोज्नुहोस् (उदा. भिसा, विवाह)...' : 'Search topic (e.g. visa, marriage)...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-black/60 border border-amber-800/60 rounded-xl pl-9 pr-3 py-1.5 text-xs text-amber-100 placeholder-amber-500/60 focus:border-amber-400 focus:outline-none"
@@ -747,46 +757,46 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                 <div className="flex items-start justify-between gap-3 pb-2 border-b border-amber-800/50">
                   <div className="space-y-0.5">
                     <div className="text-[10px] text-amber-400/80 uppercase font-semibold">
-                      {topic.categoryNe}
+                      {lang === 'ne' ? topic.categoryNe : topic.categoryEn}
                     </div>
                     <h3 className="font-serif font-bold text-base text-amber-100 flex items-center gap-2">
-                      <span>{topic.topicNe}</span>
+                      <span>{lang === 'ne' ? topic.topicNe : topic.topicEn}</span>
                     </h3>
                   </div>
 
                   <div className="text-right">
                     <span className="inline-block bg-amber-500/20 text-amber-300 border border-amber-600/40 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                      {topic.ratingNe}
+                      {lang === 'ne' ? topic.ratingNe : topic.ratingEn}
                     </span>
                     <div className="text-[10px] text-amber-400/70 font-mono mt-0.5">
-                      शुभता: {topic.score}%
+                      {lang === 'ne' ? `शुभता: ${topic.score}%` : `Score: ${topic.score}%`}
                     </div>
                   </div>
                 </div>
 
                 {/* Prediction Paragraph */}
                 <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed font-sans">
-                  {topic.predictionNe}
+                  {lang === 'ne' ? topic.predictionNe : topic.predictionEn}
                 </p>
 
                 {/* Meta details footer */}
                 <div className="pt-2 border-t border-amber-800/40 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                   <div>
-                    <span className="text-amber-400 font-semibold">🌟 कारक ग्रह: </span>
-                    <span className="text-amber-200">{topic.rulingPlanetsNe}</span>
+                    <span className="text-amber-400 font-semibold">{lang === 'ne' ? '🌟 कारक ग्रह: ' : '🌟 Significators: '}</span>
+                    <span className="text-amber-200">{lang === 'ne' ? topic.rulingPlanetsNe : topic.rulingPlanetsEn}</span>
                   </div>
                   <div>
-                    <span className="text-amber-400 font-semibold">📅 शुभ महिना: </span>
-                    <span className="text-amber-200">{topic.auspiciousMonthsNe}</span>
+                    <span className="text-amber-400 font-semibold">{lang === 'ne' ? '📅 शुभ महिना: ' : '📅 Auspicious Months: '}</span>
+                    <span className="text-amber-200">{lang === 'ne' ? topic.auspiciousMonthsNe : topic.auspiciousMonthsEn}</span>
                   </div>
                 </div>
 
                 {/* Remedial Advice */}
-                {topic.remediesNe && topic.remediesNe.length > 0 && (
+                {((lang === 'ne' ? topic.remediesNe : topic.remediesEn) || []).length > 0 && (
                   <div className="p-2.5 bg-amber-900/20 rounded-lg border border-amber-800/40 text-[11px] text-amber-300 space-y-1">
-                    <span className="font-bold text-amber-200 block">🌿 फलदायक वैदिक उपाय:</span>
+                    <span className="font-bold text-amber-200 block">{lang === 'ne' ? '🌿 फलदायक वैदिक उपाय:' : '🌿 Astrological Remedies:'}</span>
                     <ul className="list-disc list-inside space-y-0.5 text-amber-300/90">
-                      {topic.remediesNe.map((r, rIdx) => (
+                      {(lang === 'ne' ? topic.remediesNe : topic.remediesEn).map((r, rIdx) => (
                         <li key={rIdx}>{r}</li>
                       ))}
                     </ul>

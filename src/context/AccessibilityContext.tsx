@@ -13,6 +13,9 @@ interface AccessibilityContextType {
   increaseFontSize: () => void;
   decreaseFontSize: () => void;
   resetFontSize: () => void;
+  isSettingsOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
@@ -46,7 +49,22 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   });
 
-  const [chartSingleLetterOnly, setChartSingleLetterOnly] = useState<boolean>(true);
+  const [chartSingleLetterOnly, setChartSingleLetterOnlyState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('jyotish_single_letter_chart');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // fallback
+    }
+    return true;
+  });
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  const openSettings = () => setIsSettingsOpen(true);
+  const closeSettings = () => setIsSettingsOpen(false);
 
   const setFontScale = (scale: FontScaleLevel) => {
     setFontScaleState(scale);
@@ -55,6 +73,18 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch {
       // ignore
     }
+  };
+
+  const setChartSingleLetterOnly = (val: boolean | ((prev: boolean) => boolean)) => {
+    setChartSingleLetterOnlyState((prev) => {
+      const nextVal = typeof val === 'function' ? val(prev) : val;
+      try {
+        localStorage.setItem('jyotish_single_letter_chart', String(nextVal));
+      } catch {
+        // ignore
+      }
+      return nextVal;
+    });
   };
 
   useEffect(() => {
@@ -94,6 +124,9 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         increaseFontSize,
         decreaseFontSize,
         resetFontSize,
+        isSettingsOpen,
+        openSettings,
+        closeSettings,
       }}
     >
       {children}
@@ -116,6 +149,9 @@ export const useAccessibility = (): AccessibilityContextType => {
       increaseFontSize: () => {},
       decreaseFontSize: () => {},
       resetFontSize: () => {},
+      isSettingsOpen: false,
+      openSettings: () => {},
+      closeSettings: () => {},
     };
   }
   return context;

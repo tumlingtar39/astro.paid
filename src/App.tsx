@@ -9,16 +9,18 @@ import { NumerologySection } from './components/NumerologySection';
 import { VastuSection } from './components/VastuSection';
 import { DailyRashifalSection } from './components/DailyRashifalSection';
 import { VisitingCard } from './components/VisitingCard';
-import { AccessibilityBar } from './components/common/AccessibilityBar';
+import { AccessibilitySettingsModal } from './components/common/AccessibilitySettingsModal';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { KundaliInput, KundaliResult, Language } from './types';
 import { PANDIT_INFO } from './data/astrologyData';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, LayoutGrid, ArrowLeft, Home } from 'lucide-react';
 import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
 import { SubscriptionModal } from './components/subscription/SubscriptionModal';
 import { DeviceAuthGate } from './components/license/DeviceAuthGate';
+import { MobileDashboardGrid } from './components/dashboard/MobileDashboardGrid';
+import { AuthModal } from './components/common/AuthModal';
 
 interface MainAppContentProps {
   lang: Language;
@@ -26,7 +28,7 @@ interface MainAppContentProps {
 }
 
 function MainAppContent({ lang, setLang }: MainAppContentProps) {
-  const [activeTab, setActiveTab] = useState<string>('kundali');
+  const [activeTab, setActiveTab] = useState<string>('home');
   const [showVisitingCardModal, setShowVisitingCardModal] = useState<boolean>(false);
   const { theme, isDark } = useTheme();
   const { isSubscribed, openSubscriptionModal } = useSubscription();
@@ -35,7 +37,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
     if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed) {
       openSubscriptionModal(
         tabId === 'china17'
-          ? (lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')
+          ? (lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना)' : 'Full Cheena (17 Kundali)')
           : (lang === 'ne' ? 'वार्षिक फलित (Yearly Predictions)' : 'Yearly Predictions')
       );
       return;
@@ -93,43 +95,75 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
         {/* Global Subscription Modal */}
         <SubscriptionModal lang={lang} />
 
-        {/* Accessibility Toolbar for Low Vision & Font Zoom */}
-        <AccessibilityBar lang={lang} />
+        {/* Global Auth / Profile Modal */}
+        <AuthModal language={lang} />
 
-          {/* Main Content Area */}
-          <main className="flex-1 pb-24 md:pb-12">
-            {activeTab === 'kundali' && (
-              <BasicKundaliSection
-                lang={lang}
-                activeKundali={activeKundali}
-                activeInput={activeInput}
-                onKundaliChange={handleKundaliChange}
-                onOpenChina17={() => handleTabChange('china17')}
-              />
-            )}
-            {activeTab === 'china17' && (
-              <KundaliSection
-                lang={lang}
-                activeKundali={activeKundali}
-                activeInput={activeInput}
-                onKundaliChange={handleKundaliChange}
-                onOpenYearlyPhalit={() => handleTabChange('phalit')}
-              />
-            )}
-            {activeTab === 'phalit' && (
-              <YearlyPhalitSection
-                lang={lang}
-                initialKundali={activeKundali}
-                initialInput={activeInput}
-                onKundaliChange={handleKundaliChange}
-              />
-            )}
-            {activeTab === 'milan' && <KundaliMilanSection lang={lang} />}
-            {activeTab === 'numerology' && <NumerologySection lang={lang} />}
-            {activeTab === 'vastu' && <VastuSection lang={lang} />}
-            {activeTab === 'rashifal' && <DailyRashifalSection lang={lang} />}
-            {activeTab === 'assistant' && <ChatAssistant lang={lang} />}
-          </main>
+        {/* Vision & Font Zoom Settings Modal (Opened via Settings button) */}
+        <AccessibilitySettingsModal lang={lang} />
+
+        {/* Return to Home Grid Pill (Shown when viewing a specific service) */}
+        {activeTab !== 'home' && activeTab !== 'dashboard' && (
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5">
+            <div className="flex items-center justify-between bg-amber-900/30 border border-amber-800/50 rounded-2xl p-2 px-3 backdrop-blur-xs">
+              <button
+                onClick={() => handleTabChange('home')}
+                className="flex items-center gap-1.5 text-amber-300 hover:text-amber-100 font-bold text-xs bg-amber-950/80 hover:bg-amber-900/90 border border-amber-700/60 px-3 py-1.5 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <Home className="w-3.5 h-3.5 text-amber-400" />
+                <span>{lang === 'ne' ? '🏠 मुख्य होम (Home)' : '🏠 Main Home'}</span>
+              </button>
+              <span className="text-[11px] text-amber-400/80 font-medium hidden sm:inline">
+                {lang === 'ne' ? 'सबै सेवाहरू हेर्न होम पेजमा फर्कनुहोस्' : 'Return to Home Services Grid'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <main className="flex-1 pb-28 sm:pb-32">
+          {(activeTab === 'home' || activeTab === 'dashboard') && (
+            <MobileDashboardGrid
+              lang={lang}
+              setLang={setLang}
+              activeTab={activeTab}
+              onSelectTab={handleTabChange}
+              onOpenVisitingCard={() => setShowVisitingCardModal(true)}
+              onOpenSubscriptionModal={() => openSubscriptionModal()}
+            />
+          )}
+          {activeTab === 'kundali' && (
+            <BasicKundaliSection
+              lang={lang}
+              activeKundali={activeKundali}
+              activeInput={activeInput}
+              onKundaliChange={handleKundaliChange}
+              onOpenChina17={() => handleTabChange('china17')}
+            />
+          )}
+          {activeTab === 'china17' && (
+            <KundaliSection
+              lang={lang}
+              activeKundali={activeKundali}
+              activeInput={activeInput}
+              onKundaliChange={handleKundaliChange}
+              onOpenYearlyPhalit={() => handleTabChange('phalit')}
+            />
+          )}
+          {activeTab === 'phalit' && (
+            <YearlyPhalitSection
+              lang={lang}
+              initialKundali={activeKundali}
+              initialInput={activeInput}
+              onKundaliChange={handleKundaliChange}
+            />
+          )}
+          {activeTab === 'milan' && <KundaliMilanSection lang={lang} />}
+          {activeTab === 'numerology' && <NumerologySection lang={lang} />}
+          {activeTab === 'vastu' && <VastuSection lang={lang} />}
+          {activeTab === 'rashifal' && <DailyRashifalSection lang={lang} />}
+          {activeTab === 'assistant' && <ChatAssistant lang={lang} />}
+        </main>
 
           {/* Visiting Card Modal */}
           {showVisitingCardModal && (
@@ -170,7 +204,7 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
                 </button>
                 <span>•</span>
                 <button onClick={() => handleTabChange('china17')} className="hover:underline">
-                  {lang === 'ne' ? '१७ कुण्डली र चिना (सदस्यता)' : '17 Kundali & China (Member)'}
+                  {lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना)' : 'Full Cheena (17 Kundali)'}
                 </button>
                 <span>•</span>
                 <button onClick={() => handleTabChange('phalit')} className="hover:underline">

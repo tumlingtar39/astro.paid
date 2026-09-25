@@ -48,6 +48,17 @@ const formatADDateToBS = (adDateInput: string | Date): string => {
   return `${yStr}-${mStr}-${dStr}`;
 };
 
+// Helper: Format AD date to standard YYYY-MM-DD
+const formatDate = (dateInput: string | Date): string => {
+  if (!dateInput) return '—';
+  const d = parseDateUTC(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 // Helper: Calculate age in years
 const calculateAgeYears = (birthDateInput: string | Date, targetDateInput: string | Date): number => {
   const bDate = parseDateUTC(birthDateInput);
@@ -89,6 +100,7 @@ interface SingleDashaTableProps {
   systemType: 'vimshottari' | 'tribhagi' | 'yogini';
   data: Array<any>;
   birthDate: string;
+  lang?: Language;
 }
 
 const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
@@ -97,8 +109,11 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
   column1Header,
   systemType,
   data,
-  birthDate
+  birthDate,
+  lang = 'ne'
 }) => {
+  const isEn = lang === 'en';
+
   return (
     <div className="space-y-3 bg-amber-50/80 p-4 sm:p-5 rounded-2xl border-2 border-amber-400 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-amber-300 pb-2">
@@ -110,10 +125,10 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
         </div>
         <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-200 border border-amber-400 text-amber-950 shrink-0">
           {systemType === 'vimshottari'
-            ? '१२० वर्ष (वर्ष मात्र)'
+            ? (isEn ? '120 Years Cycle' : '१२० वर्ष (वर्ष मात्र)')
             : systemType === 'yogini'
-            ? '७२ वर्ष (वर्ष मात्र)'
-            : '८० वर्ष ० महिना (वर्ष र महिना)'}
+            ? (isEn ? '72 Years Cycle' : '७२ वर्ष (वर्ष मात्र)')
+            : (isEn ? '80 Yrs 0 Mo Cycle' : '८० वर्ष ० महिना (वर्ष र महिना)')}
         </span>
       </div>
 
@@ -124,10 +139,12 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
               <th className="p-2 border border-amber-800 text-left sm:text-center w-1/4 font-bold">
                 {column1Header}
               </th>
-              <th className="p-2 border border-amber-800 w-1/4 font-bold">सुरु मिति</th>
-              <th className="p-2 border border-amber-800 w-1/4 font-bold">अन्त्य मिति</th>
+              <th className="p-2 border border-amber-800 w-1/4 font-bold">{isEn ? 'Start Date' : 'सुरु मिति'}</th>
+              <th className="p-2 border border-amber-800 w-1/4 font-bold">{isEn ? 'End Date' : 'अन्त्य मिति'}</th>
               <th className="p-2 border border-amber-800 w-1/4 font-bold">
-                {systemType === 'tribhagi' ? 'उमेर / अवधि (वर्ष र महिना)' : 'उमेर / अवधि (वर्ष मात्र)'}
+                {systemType === 'tribhagi'
+                  ? (isEn ? 'Age / Duration (Yrs & Mo)' : 'उमेर / अवधि (वर्ष र महिना)')
+                  : (isEn ? 'Age / Duration (Years)' : 'उमेर / अवधि (वर्ष मात्र)')}
               </th>
             </tr>
           </thead>
@@ -137,23 +154,22 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
               let cumulativeYearsFloat = 0;
 
               return data.map((item, idx) => {
-                const rawName = item.nameNe || item.planetNe || '—';
+                const rawName = (isEn ? (item.nameEn || item.planetEn || item.nameNe || item.planetNe) : (item.nameNe || item.planetNe)) || '—';
                 const isActive = checkIsActive(item.startDate, item.endDate);
-                const displayName = isActive ? `${rawName} ->` : rawName;
-                const textColorClass = getPlanetTextColor(rawName);
+                const textColorClass = getPlanetTextColor(item.nameNe || item.planetNe || rawName);
 
                 const startBS = formatADDateToBS(item.startDate);
                 const endBS = formatADDateToBS(item.endDate);
+                const startDisplay = isEn ? `${formatDate(item.startDate)} (BS ${startBS})` : startBS;
+                const endDisplay = isEn ? `${formatDate(item.endDate)} (BS ${endBS})` : endBS;
 
                 let durationAge = '';
 
                 if (systemType === 'tribhagi') {
-                  // त्रिभागी दशा: ८० वर्ष ० महिना चक्र (वर्ष र महिना)
                   const durMonths = Math.round((item.durationYears || 0) * 12);
                   const startM = cumulativeMonths;
                   let endM = startM + durMonths;
 
-                  // अन्तिम पंक्ति वा ८० वर्ष (९६० महिना) पुग्दा ठीक ८० वर्ष ० महिनामा अन्त्य
                   if (idx === data.length - 1 || Math.abs(endM - 960) <= 2) {
                     endM = 960;
                   }
@@ -163,13 +179,14 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
                   const startYM = { years: Math.floor(startM / 12), months: startM % 12 };
                   const endYM = { years: Math.floor(endM / 12), months: endM % 12 };
 
-                  const durText = formatVedicYM(durYM, 'ne');
-                  const startText = formatVedicYM(startYM, 'ne');
-                  const endText = formatVedicYM(endYM, 'ne');
+                  const durText = formatVedicYM(durYM, isEn ? 'en' : 'ne');
+                  const startText = formatVedicYM(startYM, isEn ? 'en' : 'ne');
+                  const endText = formatVedicYM(endYM, isEn ? 'en' : 'ne');
 
-                  durationAge = `${durText} (${startText} देखि ${endText})`;
+                  durationAge = isEn
+                    ? `${durText} (${startText} to ${endText})`
+                    : `${durText} (${startText} देखि ${endText})`;
                 } else if (systemType === 'vimshottari') {
-                  // विंशोत्तरी दशा: १२० वर्ष चक्र (वर्ष मात्र)
                   const durY = Math.round(item.durationYears || 0);
                   const startY = Math.round(cumulativeYearsFloat);
                   let endY = startY + durY;
@@ -178,9 +195,10 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
                   }
                   cumulativeYearsFloat = endY;
 
-                  durationAge = `${toNepaliDigits(durY)} वर्ष (${toNepaliDigits(startY)} देखि ${toNepaliDigits(endY)} वर्ष)`;
+                  durationAge = isEn
+                    ? `${durY} Yrs (${startY} to ${endY} yrs)`
+                    : `${toNepaliDigits(durY)} वर्ष (${toNepaliDigits(startY)} देखि ${toNepaliDigits(endY)} वर्ष)`;
                 } else {
-                  // योगिनी दशा: ७२ वर्ष चक्र (वर्ष मात्र)
                   const durY = Math.round(item.durationYears || 0);
                   const startY = Math.round(cumulativeYearsFloat);
                   let endY = startY + durY;
@@ -189,7 +207,9 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
                   }
                   cumulativeYearsFloat = endY;
 
-                  durationAge = `${toNepaliDigits(durY)} वर्ष (${toNepaliDigits(startY)} देखि ${toNepaliDigits(endY)} वर्ष)`;
+                  durationAge = isEn
+                    ? `${durY} Yrs (${startY} to ${endY} yrs)`
+                    : `${toNepaliDigits(durY)} वर्ष (${toNepaliDigits(startY)} देखि ${toNepaliDigits(endY)} वर्ष)`;
                 }
 
                 return (
@@ -208,22 +228,22 @@ const SingleDashaTable: React.FC<SingleDashaTableProps> = ({
                         </span>
                         {isActive && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-200/90 border border-amber-400 text-amber-950 text-[10px] font-extrabold shadow-2xs">
-                            ⚡ हालको
+                            {isEn ? '⚡ Current' : '⚡ हालको'}
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="p-2 border border-amber-800 font-semibold text-amber-950 font-mono text-xs sm:text-sm">
-                      {startBS}
+                      {startDisplay}
                     </td>
                     <td className="p-2 border border-amber-800 font-semibold text-amber-950 font-mono text-xs sm:text-sm">
-                      {endBS}
+                      {endDisplay}
                     </td>
-                    <td className="p-2 border border-amber-800 font-semibold text-amber-900">
+                    <td className="p-2 border border-amber-800 font-semibold text-amber-900 font-sans text-xs">
                       {durationAge}
                       {item.isBalancePeriod && (
                         <span className="ml-1.5 text-[10px] bg-amber-200 text-amber-950 px-1 py-0.5 rounded font-bold">
-                          जन्म भोग्य
+                          {isEn ? 'Balance' : 'जन्म भोग्य'}
                         </span>
                       )}
                     </td>
@@ -382,21 +402,27 @@ export const TraditionalCheenaView: React.FC<TraditionalCheenaViewProps> = ({
     {
       code: 'D1',
       titleNe: '१. मुख्य जन्म लग्न कुण्डली (D1)',
+      titleEn: '1. Primary Birth Lagna Chart (D1)',
       subtitleNe: 'शारीरिक बनावट, समग्र व्यक्तित्व तथा आधारभूत जन्म लग्न',
+      subtitleEn: 'Physical constitution, general personality & foundational birth lagna',
       houses: d1Houses,
       lagnaSignIndex: d1Chart?.houses[0]?.signIndex ?? lagnaSignIdx
     },
     {
       code: 'CHANDRA',
       titleNe: '२. राशि कुण्डली (Chandra Kundali)',
+      titleEn: '2. Moon Chart (Chandra Kundali)',
       subtitleNe: 'चन्द्रमा आधारित मन, भावना, मानसिक शक्ति र राशी चक्र',
+      subtitleEn: 'Lunar mind, emotions, mental disposition and Rashi cycle',
       houses: chandraKundaliHouses,
       lagnaSignIndex: moonSignIdx
     },
     {
       code: 'D9',
       titleNe: '३. नवमांश कुण्डली (D9)',
+      titleEn: '3. Navamsha Chart (D9)',
       subtitleNe: 'भाग्य, विवाह, जीवनसाथी, धर्म र उत्तरार्ध जीवन',
+      subtitleEn: 'Destiny, marriage, spouse, dharma and latter half of life',
       houses: d9Houses,
       lagnaSignIndex: d9Chart?.houses[0]?.signIndex ?? 0
     },
@@ -405,7 +431,9 @@ export const TraditionalCheenaView: React.FC<TraditionalCheenaViewProps> = ({
       return {
         code,
         titleNe: `${idx + 4}. ${chartData?.nameNe || code}`,
+        titleEn: `${idx + 4}. ${chartData?.nameEn || code}`,
         subtitleNe: chartData?.descriptionNe || '',
+        subtitleEn: chartData?.descriptionEn || chartData?.descriptionNe || '',
         houses: chartData
           ? chartData.houses.map((h) => ({
               house: h.houseNum,
@@ -495,13 +523,65 @@ export const TraditionalCheenaView: React.FC<TraditionalCheenaViewProps> = ({
   );
 
   const activeDashaTitle = activeVimDasha
-    ? `${activeVimDasha.planetNe} महादशा ${activeVimAntar ? `(${activeVimAntar.planetNe} अन्तर्दशा)` : ''}`
-    : (activeTriDasha ? `${activeTriDasha.planetNe} त्रिभागी दशा` : '');
+    ? (lang === 'en'
+        ? `${activeVimDasha.planetEn || activeVimDasha.planetNe} Mahadasha ${activeVimAntar ? `(${activeVimAntar.planetEn || activeVimAntar.planetNe} Antardasha)` : ''}`
+        : `${activeVimDasha.planetNe} महादशा ${activeVimAntar ? `(${activeVimAntar.planetNe} अन्तर्दशा)` : ''}`)
+    : (activeTriDasha ? (lang === 'en' ? `${activeTriDasha.planetEn || activeTriDasha.planetNe} Tribhagi Dasha` : `${activeTriDasha.planetNe} त्रिभागी दशा`) : '');
 
-  const childGenderText = input.gender === 'female' ? 'पुत्री' : 'पुत्र';
+  const childGenderText = input.gender === 'female' ? (lang === 'en' ? 'Daughter' : 'पुत्री') : (lang === 'en' ? 'Son' : 'पुत्र');
 
   // Construct text for copying in requested format
-  const fullCheenaText = `[अगाडिको भाग]
+  const fullCheenaText = lang === 'en'
+    ? `[Front Page - Poorva Bhag]
+
+(Om) Shree Manmangalamurtaye Namaha (Om)
+
+Salutations to the Sun and all celestial planets, along with lunar mansions and zodiac constellations.
+May this horoscope bestow long life, health, wisdom, prosperity, and divine protection upon the native.
+
+Shaka Year: ${p?.shakaYear || shakaYear}, Vikram Samvat: ${p?.vikramYear || vikramSamvat}
+Samvatsara: ${p?.samvatsaraEn || samvatsarName}, Course of Sun: ${p?.ayanaEn || ayanaName}
+Season: ${p?.rituEn || rituName}, Lunar Month: ${p?.chandraMasaEn || p?.solarMasaEn || chandraMonthName}, Paksha: ${p?.pakshaEn || pakshaName}
+Day of Birth: ${p?.varaEn || varaName}, Day Tithi: ${p?.tithiEn || dayTithiName}, Birth Tithi: ${p?.birthTithiNe || birthTithiName}
+Nakshatra: ${p?.nakshatraEn || dayNakshatraName}, Yoga: ${p?.yogaEn || dayYogaName}, Karana: ${p?.karanaEn || karanaName}
+Date of Birth: ${input.birthDate}, Time: ${input.birthTime}
+Place of Birth: ${input.birthPlace}
+Ascendant (Lagna): ${result.lagnaEnglish || result.lagna}, Moon Sign: ${result.rashiEnglish || result.rashi}
+
+Gotra: ${gotra}
+Father: ${fatherName}
+Mother: ${motherName}
+Native: ${input.name} (${childGenderText})
+Avakhada Details:
+Nakshatra: ${av.nakshatra}, Pada: ${av.nakshatraPad}, Name Syllable: ${av.namakshar}
+Yoni: ${av.yoni}, Nadi: ${av.nadi}, Gana: ${av.gana}, Varna: ${av.varna}
+
+---
+
+[Reverse Page - Uttara Bhag]
+
+(Om) Planetary Positions at Birth (Graha Spashta) (Om)
+
+| Parameter / Planet | Sun | Moon | Mars | Mercury | Jupiter | Venus | Saturn | Rahu | Ketu | Lagna |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Sign (Rashi) | ${getPlanetInfo('sun').rashi} | ${getPlanetInfo('moon').rashi} | ${getPlanetInfo('mars').rashi} | ${getPlanetInfo('mercury').rashi} | ${getPlanetInfo('jupiter').rashi} | ${getPlanetInfo('venus').rashi} | ${getPlanetInfo('saturn').rashi} | ${getPlanetInfo('rahu').rashi} | ${getPlanetInfo('ketu').rashi} | ${getPlanetInfo('lagna').rashi} |
+| Deg (°) | ${getPlanetInfo('sun').deg}° | ${getPlanetInfo('moon').deg}° | ${getPlanetInfo('mars').deg}° | ${getPlanetInfo('mercury').deg}° | ${getPlanetInfo('jupiter').deg}° | ${getPlanetInfo('venus').deg}° | ${getPlanetInfo('saturn').deg}° | ${getPlanetInfo('rahu').deg}° | ${getPlanetInfo('ketu').deg}° | ${getPlanetInfo('lagna').deg}° |
+| Min (') | ${getPlanetInfo('sun').min}' | ${getPlanetInfo('moon').min}' | ${getPlanetInfo('mars').min}' | ${getPlanetInfo('mercury').min}' | ${getPlanetInfo('jupiter').min}' | ${getPlanetInfo('venus').min}' | ${getPlanetInfo('saturn').min}' | ${getPlanetInfo('rahu').min}' | ${getPlanetInfo('ketu').min}' | ${getPlanetInfo('lagna').min}' |
+| Sec (") | ${getPlanetInfo('sun').sec}" | ${getPlanetInfo('moon').sec}" | ${getPlanetInfo('mars').sec}" | ${getPlanetInfo('mercury').sec}" | ${getPlanetInfo('jupiter').sec}" | ${getPlanetInfo('venus').sec}" | ${getPlanetInfo('saturn').sec}" | ${getPlanetInfo('rahu').sec}" | ${getPlanetInfo('ketu').sec}" | ${getPlanetInfo('lagna').sec}" |
+| Motion | ${getPlanetInfo('sun').bMa} | ${getPlanetInfo('moon').bMa} | ${getPlanetInfo('mars').bMa} | ${getPlanetInfo('mercury').bMa} | ${getPlanetInfo('jupiter').bMa} | ${getPlanetInfo('venus').bMa} | ${getPlanetInfo('saturn').bMa} | ${getPlanetInfo('rahu').bMa} | ${getPlanetInfo('ketu').bMa} | ${getPlanetInfo('lagna').bMa} |
+| Combustion | ${getPlanetInfo('sun').uA} | ${getPlanetInfo('moon').uA} | ${getPlanetInfo('mars').uA} | ${getPlanetInfo('mercury').uA} | ${getPlanetInfo('jupiter').uA} | ${getPlanetInfo('venus').uA} | ${getPlanetInfo('saturn').uA} | ${getPlanetInfo('rahu').uA} | ${getPlanetInfo('ketu').uA} | ${getPlanetInfo('lagna').uA} |
+| Dignity | ${getPlanetInfo('sun').uJa} | ${getPlanetInfo('moon').uJa} | ${getPlanetInfo('mars').uJa} | ${getPlanetInfo('mercury').uJa} | ${getPlanetInfo('jupiter').uJa} | ${getPlanetInfo('venus').uJa} | ${getPlanetInfo('saturn').uJa} | ${getPlanetInfo('rahu').uJa} | ${getPlanetInfo('ketu').uJa} | ${getPlanetInfo('lagna').uJa} |
+
+[ Complete 17 Divisional Charts Sequence ]
+1. Lagna Kundali (D1) -> Lagna: ${result.lagnaEnglish || result.lagna}, Moon Sign: ${result.rashiEnglish || result.rashi}
+2. Moon Chart (Chandra) -> Moon Sign: ${result.rashiEnglish || result.rashi}
+3. Navamsha Chart (D9) -> Navamsha: ${d9Chart?.houses[0]?.signEn || d9Chart?.houses[0]?.signNe || 'Aries'}
+4. Hora (D2), 5. Drekkana (D3), 6. Chaturthamsha (D4), 7. Saptamamsha (D7), 8. Dashamamsha (D10), 9. Dwadashamsha (D12), 10. Shodashamsha (D16), 11. Vimshamsha (D20), 12. Chaturvimshamsha (D24), 13. Saptavimshamsha (D27), 14. Trimshamsha (D30), 15. Khavedamsha (D40), 16. Akshavedamsha (D45), 17. Shashtiamsha (D60)
+
+Author / Astrologer: ${authorName}
+Location: ${authorLocation}
+Phone: ${authorPhone}`
+    : `[अगाडिको भाग]
 
 (ॐ) श्री मन्मङ्गलमूर्तये नमः (ॐ)
 
@@ -577,10 +657,12 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
         <div>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-100 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-400" />
-            <span>नेपाली परम्परागत जन्मपत्रिका (चिना)</span>
+            <span>{lang === 'en' ? 'Authentic Traditional Vedic Birth Horoscope (Cheena)' : 'नेपाली परम्परागत जन्मपत्रिका (चिना)'}</span>
           </h2>
           <p className="text-xs text-amber-300/80 mt-1">
-            शास्त्रीय संस्कृत मन्त्र, पञ्चाङ्ग, स्पष्ट ग्रह स्थिति, लग्न, राशि, नवमांश र सम्पूर्ण १७ वर्ग कुण्डलीहरू सहितको आधिकारिक चिना।
+            {lang === 'en'
+              ? 'Classical Sanskrit invocations, Panchang, Graha Spashta, Lagna, Rashi, Navamsha and complete 17 divisional charts.'
+              : 'शास्त्रीय संस्कृत मन्त्र, पञ्चाङ्ग, स्पष्ट ग्रह स्थिति, लग्न, राशि, नवमांश र सम्पूर्ण १७ वर्ग कुण्डलीहरू सहितको आधिकारिक चिना।'}
           </p>
         </div>
 
@@ -590,7 +672,11 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             className="bg-amber-900/60 hover:bg-amber-800 text-amber-200 border border-amber-700/80 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
           >
             <Edit3 className="w-4 h-4 text-amber-400" />
-            <span>{showEditCustomFields ? 'विवरण सम्पादन लुकाउनुहोस्' : 'गोत्र र अभिभावक विवरण सम्पादन'}</span>
+            <span>
+              {showEditCustomFields
+                ? (lang === 'en' ? 'Hide Custom Fields' : 'विवरण सम्पादन लुकाउनुहोस्')
+                : (lang === 'en' ? 'Edit Gotra & Parent Details' : 'गोत्र र अभिभावक विवरण सम्पादन')}
+            </span>
           </button>
 
           <button
@@ -598,7 +684,11 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             className="bg-amber-800 hover:bg-amber-700 text-amber-100 border border-amber-500/80 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-md active:scale-95"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-300" />}
-            <span>{copied ? 'कपी गरियो!' : 'पूर्ण चिना पाठ कपी गर्नुहोस्'}</span>
+            <span>
+              {copied
+                ? (lang === 'en' ? 'Copied!' : 'कपी गरियो!')
+                : (lang === 'en' ? 'Copy Full Cheena Text' : 'पूर्ण चिना पाठ कपी गर्नुहोस्')}
+            </span>
           </button>
 
           <button
@@ -606,7 +696,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             className="bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg hover:brightness-110 transition-all flex items-center gap-1.5"
           >
             <Printer className="w-4 h-4 text-amber-950" />
-            <span>चिना प्रिन्ट / PDF डाउनलोड</span>
+            <span>{lang === 'en' ? 'Print Cheena / Download PDF' : 'चिना प्रिन्ट / PDF डाउनलोड'}</span>
           </button>
         </div>
       </div>
@@ -615,11 +705,15 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
       {showEditCustomFields && (
         <div className="bg-amber-950/90 border border-amber-700/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 animate-fadeIn">
           <h3 className="text-sm font-bold text-amber-300 font-serif border-b border-amber-800/60 pb-2">
-            ✍️ चिना फारमका लागि अतिरिक्त विवरणहरू प्रविष्ट गर्नुहोस्:
+            {lang === 'en'
+              ? '✍️ Enter Custom Details for Cheena Document:'
+              : '✍️ चिना फारमका लागि अतिरिक्त विवरणहरू प्रविष्ट गर्नुहोस्:'}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="text-amber-200 block mb-1">गोत्र (Gotra):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Gotra (Lineage):' : 'गोत्र (Gotra):'}
+              </label>
               <input
                 type="text"
                 value={gotra}
@@ -629,7 +723,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             </div>
 
             <div>
-              <label className="text-amber-200 block mb-1">बुवाको नाम (Father Name):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Father Name:' : 'बुवाको नाम (Father Name):'}
+              </label>
               <input
                 type="text"
                 value={fatherName}
@@ -639,7 +735,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             </div>
 
             <div>
-              <label className="text-amber-200 block mb-1">आमाको नाम (Mother Name):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Mother Name:' : 'आमाको नाम (Mother Name):'}
+              </label>
               <input
                 type="text"
                 value={motherName}
@@ -649,7 +747,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             </div>
 
             <div>
-              <label className="text-amber-200 block mb-1">लेखक/ज्योतिषी (Author Pandit):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Author / Astrologer:' : 'लेखक/ज्योतिषी (Author Pandit):'}
+              </label>
               <input
                 type="text"
                 value={authorName}
@@ -659,7 +759,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             </div>
 
             <div>
-              <label className="text-amber-200 block mb-1">स्थान (Place):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Location (Place):' : 'स्थान (Place):'}
+              </label>
               <input
                 type="text"
                 value={authorLocation}
@@ -669,7 +771,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             </div>
 
             <div>
-              <label className="text-amber-200 block mb-1">सम्पर्क फोन (Phone):</label>
+              <label className="text-amber-200 block mb-1">
+                {lang === 'en' ? 'Contact Phone:' : 'सम्पर्क फोन (Phone):'}
+              </label>
               <input
                 type="text"
                 value={authorPhone}
@@ -684,11 +788,11 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
       {/* Classical Traditional Parchment Print Sheet Document */}
       <div className="bg-[#FFFDF5] text-amber-950 rounded-2xl p-6 sm:p-10 border-4 border-amber-700 shadow-2xl font-serif space-y-8 print:p-0 print:border-none print:shadow-none print:bg-white print:text-black">
         {/* ================================================================ */}
-        {/* [अगाडिको भाग] */}
+        {/* [अगाडिको भाग / Front Page] */}
         {/* ================================================================ */}
         <div className="space-y-6 pb-8 border-b-2 border-dashed border-amber-800/40">
           <div className="text-center font-bold text-lg sm:text-2xl text-amber-900 tracking-widest uppercase">
-            [ अगाडिको भाग ]
+            {lang === 'en' ? '[ Front Page - Poorva Bhag ]' : '[ अगाडिको भाग ]'}
           </div>
 
           {/* Top Mangalacharan / Opening Invocation */}
@@ -707,49 +811,76 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
               <p className="pt-1">उमा, गौरी, शिवा, दुर्गा, भद्रा, भगवती तथा ।</p>
               <p>कुलदेव्याश्च चामुण्डा रक्षता बालकं सदा ॥ ४ ॥</p>
             </div>
+            {lang === 'en' && (
+              <p className="text-xs text-amber-900/80 italic pt-1 font-sans">
+                "May the Sun and all celestial grahas, stars, and zodiacs bestow long life, health, divine wisdom, and total protection upon the native whose horoscope is inscribed herein."
+              </p>
+            )}
           </div>
 
           {/* Panchang & Birth Moment Paragraph */}
           <div className="text-xs sm:text-sm md:text-base leading-loose text-justify text-amber-950 bg-amber-50/80 p-4 sm:p-6 rounded-2xl border border-amber-200/80 space-y-3">
-            <p>
-              श्री शालिवाहिनीयशाके <span className="font-bold underline text-amber-900">{shakaYear}</span> श्री विक्रमादित्य संवत् <span className="font-bold underline text-amber-900">{vikramSamvat}</span> साल{' '}
-              सौरमानेन <span className="font-bold underline text-amber-900">{samvatsarName}</span> नाम संवत्सरे श्री सूर्य <span className="font-bold underline text-amber-900">{ayanaName}</span> अयने{' '}
-              <span className="font-bold underline text-amber-900">{rituName}</span> ऋतौ <span className="font-bold underline text-amber-900">{chandraMonthName}</span> मासे <span className="font-bold underline text-amber-900">{pakshaName}</span>{' '}
-              <span className="font-bold underline text-amber-900">{varaName}</span> <span className="font-bold underline text-amber-900">{dayTithiName}</span> तिथौ <span className="font-bold underline text-amber-900">{tithiEndGhatiPal}</span> जन्मतिथौ <span className="font-bold underline text-amber-900">{birthTithiName}</span>{' '}
-              <span className="font-bold underline text-amber-900">{dayNakshatraName}</span> नक्षत्रे <span className="font-bold underline text-amber-900">{nakshatraEndGhatiPal}</span> जन्मनक्षत्रस्य भुक्त <span className="font-bold underline text-amber-900">{nakshatraBhuktaGhatiPal}</span> भभोग <span className="font-bold underline text-amber-900">{bhabhogaGhatiPal}</span>{' '}
-              <span className="font-bold underline text-amber-900">{dayYogaName}</span> योगे <span className="font-bold underline text-amber-900">{yogaEndGhatiPal}</span> जन्मयोगे <span className="font-bold underline text-amber-900">{birthYogaName}</span>{' '}
-              <span className="font-bold underline text-amber-900">{karanaName}</span> जन्मकरणे जन्मेति पञ्चाङ्गम् ।
-            </p>
+            {lang === 'en' ? (
+              <>
+                <p>
+                  According to the classical Vedic chronology: In Shaka Era <span className="font-bold underline text-amber-900">{p?.shakaYear || shakaYear}</span>, Vikram Samvat <span className="font-bold underline text-amber-900">{p?.vikramYear || vikramSamvat}</span>,{' '}
+                  Samvatsara <span className="font-bold underline text-amber-900">{p?.samvatsaraEn || samvatsarName}</span>, Course of Sun <span className="font-bold underline text-amber-900">{p?.ayanaEn || ayanaName}</span>,{' '}
+                  Season <span className="font-bold underline text-amber-900">{p?.rituEn || rituName}</span>, Lunar Month <span className="font-bold underline text-amber-900">{p?.chandraMasaEn || p?.solarMasaEn || chandraMonthName}</span>, <span className="font-bold underline text-amber-900">{p?.pakshaEn || pakshaName}</span>,{' '}
+                  Weekday <span className="font-bold underline text-amber-900">{p?.varaEn || varaName}</span>, Day Tithi <span className="font-bold underline text-amber-900">{p?.tithiEn || dayTithiName}</span> ({tithiEndGhatiPal}), Birth Tithi <span className="font-bold underline text-amber-900">{p?.birthTithiNe || birthTithiName}</span>,{' '}
+                  Birth Nakshatra <span className="font-bold underline text-amber-900">{p?.nakshatraEn || dayNakshatraName}</span> ({nakshatraEndGhatiPal}, Bhukta {nakshatraBhuktaGhatiPal}, Bhabhoga {bhabhogaGhatiPal}),{' '}
+                  Yoga <span className="font-bold underline text-amber-900">{p?.yogaEn || dayYogaName}</span> ({yogaEndGhatiPal}), Birth Yoga <span className="font-bold underline text-amber-900">{p?.birthYogaNe || birthYogaName}</span>, Karana <span className="font-bold underline text-amber-900">{p?.karanaEn || karanaName}</span>.
+                </p>
+                <p>
+                  Solar Calendar: Solar Month <span className="font-bold underline text-amber-900">{p?.solarMasaEn || solarMonthName}</span>, Gate <span className="font-bold underline text-amber-900">{p?.bsDay || bsGate}</span>, corresponding to English Date of Birth <span className="font-bold underline text-amber-900">{input.birthDate}</span> at{' '}
+                  <span className="font-bold underline text-amber-900">{p?.varaEn || varaName}</span>, Ishta Kala: <span className="font-bold underline text-amber-900">{ishtaKalaGhatiPal}</span>, Time: <span className="font-bold underline text-amber-900">{input.birthTime}</span>. At this auspicious moment of birth, Ascendant (Lagna) is <span className="font-bold underline text-amber-900">{result.lagnaEnglish || result.lagna}</span>, Navamsha is <span className="font-bold underline text-amber-900">{d9Chart?.houses[0]?.signEn || result.rashiEnglish || result.rashi}</span>, and Moon is situated in <span className="font-bold underline text-amber-900">{result.rashiEnglish || result.rashi}</span> zodiac sign.
+                </p>
+                <p>
+                  In this purified Vedic muhurta, in Nepal at <span className="font-bold underline text-amber-900">{input.birthPlace}</span>, born to father Shri <span className="font-bold underline text-amber-900">{fatherName}</span> and legally wedded mother Shrimati <span className="font-bold underline text-amber-900">{motherName}</span>, of <span className="font-bold underline text-amber-900">{gotra}</span> Gotra, a beloved jewel of a <span className="font-bold underline text-amber-900">{childGenderText.toLowerCase()}</span> was born. According to the tenets of Hora Shastra: Nakshatra: <span className="font-bold underline text-amber-900">{av.nakshatra}</span>, Pada: <span className="font-bold underline text-amber-900">{av.nakshatraPad}</span>, Birth Syllable: <span className="font-bold underline text-amber-900">{av.namakshar}</span>, Yoni: <span className="font-bold underline text-amber-900">{av.yoni}</span>, Nadi: <span className="font-bold underline text-amber-900">{av.nadi}</span>, Gana: <span className="font-bold underline text-amber-900">{av.gana}</span>, Varna: <span className="font-bold underline text-amber-900">{av.varna}</span>, auspicious worldly name Shri <span className="font-bold underline text-red-800">{input.name}</span>. May the divine deities and venerable preceptors bless the native with long life and abundant fortune!
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  श्री शालिवाहिनीयशाके <span className="font-bold underline text-amber-900">{shakaYear}</span> श्री विक्रमादित्य संवत् <span className="font-bold underline text-amber-900">{vikramSamvat}</span> साल{' '}
+                  सौरमानेन <span className="font-bold underline text-amber-900">{samvatsarName}</span> नाम संवत्सरे श्री सूर्य <span className="font-bold underline text-amber-900">{ayanaName}</span> अयने{' '}
+                  <span className="font-bold underline text-amber-900">{rituName}</span> ऋतौ <span className="font-bold underline text-amber-900">{chandraMonthName}</span> मासे <span className="font-bold underline text-amber-900">{pakshaName}</span>{' '}
+                  <span className="font-bold underline text-amber-900">{varaName}</span> <span className="font-bold underline text-amber-900">{dayTithiName}</span> तिथौ <span className="font-bold underline text-amber-900">{tithiEndGhatiPal}</span> जन्मतिथौ <span className="font-bold underline text-amber-900">{birthTithiName}</span>{' '}
+                  <span className="font-bold underline text-amber-900">{dayNakshatraName}</span> नक्षत्रे <span className="font-bold underline text-amber-900">{nakshatraEndGhatiPal}</span> जन्मनक्षत्रस्य भुक्त <span className="font-bold underline text-amber-900">{nakshatraBhuktaGhatiPal}</span> भभोग <span className="font-bold underline text-amber-900">{bhabhogaGhatiPal}</span>{' '}
+                  <span className="font-bold underline text-amber-900">{dayYogaName}</span> योगे <span className="font-bold underline text-amber-900">{yogaEndGhatiPal}</span> जन्मयोगे <span className="font-bold underline text-amber-900">{birthYogaName}</span>{' '}
+                  <span className="font-bold underline text-amber-900">{karanaName}</span> जन्मकरणे जन्मेति पञ्चाङ्गम् ।
+                </p>
 
-            <p>
-              अथ सौरमानेन <span className="font-bold underline text-amber-900">{solarMonthName}</span> मासे सूर्य संक्रमाद् दिन गता <span className="font-bold underline text-amber-900">{bsGate}</span> गते तदनुसार{' '}
-              (Date of Birth <span className="font-bold underline text-amber-900">{input.birthDate}</span>) अत्र{' '}
-              <span className="font-bold underline text-amber-900">{varaName}</span> सूर्योदयादिष्ट <span className="font-bold underline text-amber-900">{ishtaKalaGhatiPal}</span> घण्टा <span className="font-bold underline text-amber-900">{toNepaliDigits(input.birthTime.split(':')[0])}</span> मिनेट <span className="font-bold underline text-amber-900">{toNepaliDigits(input.birthTime.split(':')[1])}</span>{' '}
-              तदा जन्म समये <span className="font-bold underline text-amber-900">{result.lagna}</span> लग्नोदये <span className="font-bold underline text-amber-900">{result.rashi}</span> नवमांसे <span className="font-bold underline text-amber-900">{result.rashi}</span> राशिगते चन्द्रमसि।
-            </p>
+                <p>
+                  अथ सौरमानेन <span className="font-bold underline text-amber-900">{solarMonthName}</span> मासे सूर्य संक्रमाद् दिन गता <span className="font-bold underline text-amber-900">{bsGate}</span> गते तदनुसार{' '}
+                  (Date of Birth <span className="font-bold underline text-amber-900">{input.birthDate}</span>) अत्र{' '}
+                  <span className="font-bold underline text-amber-900">{varaName}</span> सूर्योदयादिष्ट <span className="font-bold underline text-amber-900">{ishtaKalaGhatiPal}</span> घण्टा <span className="font-bold underline text-amber-900">{toNepaliDigits(input.birthTime.split(':')[0])}</span> मिनेट <span className="font-bold underline text-amber-900">{toNepaliDigits(input.birthTime.split(':')[1])}</span>{' '}
+                  तदा जन्म समये <span className="font-bold underline text-amber-900">{result.lagna}</span> लग्नोदये <span className="font-bold underline text-amber-900">{result.rashi}</span> नवमांसे <span className="font-bold underline text-amber-900">{result.rashi}</span> राशिगते चन्द्रमसि।
+                </p>
 
-            <p>
-              एवंविरधे पञ्चाङ्गशुद्धे शुभपुण्यदिने शुभमुहूर्तवेलायां श्रीमद्ब्रह्मणो धारणात्मक भूगोलेक देशे भारतवर्षे भरतखण्डे जम्बूद्वीपे आर्यावार्तान्तर्गत हिमवतो दक्षिण-पार्श्वे <span className="font-bold underline text-amber-900">नेपाल</span> देशे <span className="font-bold underline text-amber-900">{input.birthPlace}</span> स्थाने निवसत: सकल मनोरथ स्वः कुलदीपक सदगुणालंकृत <span className="font-bold underline text-amber-900">{gotra}</span> गोत्रोत्पन्ना{' '}
-              श्रीमान् पिता श्री <span className="font-bold underline text-amber-900">{fatherName}</span> तस्यपाणिगृहिता धर्म पत्नी{' '}
-              श्रीमती माता <span className="font-bold underline text-amber-900">{motherName}</span> नाम्नीदेव्याः सुगर्भयाकुक्षौ गर्भ <span className="font-bold underline text-amber-900">{childGenderText}</span>{' '}
-              रत्न मजीजनत्अस्य होराशास्त्रप्रमाणे न <span className="font-bold underline text-amber-900">{av.nakshatra}</span> नक्षत्रस्य <span className="font-bold underline text-amber-900">{av.nakshatraPad}</span> चरणत्वेन{' '}
-              <span className="font-bold underline text-amber-900">{av.namakshar}</span> काराक्षरस्य <span className="font-bold underline text-amber-900">{av.yoni}</span> योनिः <span className="font-bold underline text-amber-900">{av.nadi}</span> नाडी <span className="font-bold underline text-amber-900">{av.gana}</span> गणः <span className="font-bold underline text-amber-900">{av.varna}</span> वर्गः{' '}
-              वर्णत्मक श्री <span className="font-bold underline text-red-800">{input.name}</span> चिरञ्जीवी शुभनाम{' '}
-              प्रतिष्ठित सच देव द्विजाशिर्वादै दीर्घमायुः भुयात् ।
-            </p>
+                <p>
+                  एवंविरधे पञ्चाङ्गशुद्धे शुभपुण्यदिने शुभमुहूर्तवेलायां श्रीमद्ब्रह्मणो धारणात्मक भूगोलेक देशे भारतवर्षे भरतखण्डे जम्बूद्वीपे आर्यावार्तान्तर्गत हिमवतो दक्षिण-पार्श्वे <span className="font-bold underline text-amber-900">नेपाल</span> देशे <span className="font-bold underline text-amber-900">{input.birthPlace}</span> स्थाने निवसत: सकल मनोरथ स्वः कुलदीपक सदगुणालंकृत <span className="font-bold underline text-amber-900">{gotra}</span> गोत्रोत्पन्ना{' '}
+                  श्रीमान् पिता श्री <span className="font-bold underline text-amber-900">{fatherName}</span> तस्यपाणिगृहिता धर्म पत्नी{' '}
+                  श्रीमती माता <span className="font-bold underline text-amber-900">{motherName}</span> नाम्नीदेव्याः सुगर्भयाकुक्षौ गर्भ <span className="font-bold underline text-amber-900">{childGenderText}</span>{' '}
+                  रत्न मजीजनत्अस्य होराशास्त्रप्रमाणे न <span className="font-bold underline text-amber-900">{av.nakshatra}</span> नक्षत्रस्य <span className="font-bold underline text-amber-900">{av.nakshatraPad}</span> चरणत्वेन{' '}
+                  <span className="font-bold underline text-amber-900">{av.namakshar}</span> काराक्षरस्य <span className="font-bold underline text-amber-900">{av.yoni}</span> योनिः <span className="font-bold underline text-amber-900">{av.nadi}</span> नाडी <span className="font-bold underline text-amber-900">{av.gana}</span> गणः <span className="font-bold underline text-amber-900">{av.varna}</span> वर्गः{' '}
+                  वर्णत्मक श्री <span className="font-bold underline text-red-800">{input.name}</span> चिरञ्जीवी शुभनाम{' '}
+                  प्रतिष्ठित सच देव द्विजाशिर्वादै दीर्घमायुः भुयात् ।
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* ================================================================ */}
-        {/* [पछाडिको भाग] */}
+        {/* [पछाडिको भाग / Reverse Page] */}
         {/* ================================================================ */}
         <div className="space-y-6 pt-2">
           <div className="text-center font-bold text-lg sm:text-2xl text-amber-900 tracking-widest uppercase">
-            [ पछाडिको भाग ]
+            {lang === 'en' ? '[ Reverse Page - Uttara Bhag ]' : '[ पछाडिको भाग ]'}
           </div>
 
           <div className="text-center text-lg sm:text-xl font-bold text-red-700">
-            (ॐ) स्तकालजाः ग्रहणा स्पष्टाः (ॐ)
+            {lang === 'en' ? '(ॐ) Planetary Positions at Birth (Graha Spashta) (ॐ)' : '(ॐ) स्तकालजाः ग्रहणा स्पष्टाः (ॐ)'}
           </div>
 
           {/* Graha Spashta Table */}
@@ -757,22 +888,22 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             <table className="w-full text-center border-collapse border border-amber-800 text-xs sm:text-sm">
               <thead>
                 <tr className="bg-amber-200/80 font-bold text-amber-950 border-b border-amber-800">
-                  <th className="p-2 border border-amber-800">मान / ग्रह</th>
-                  <th className="p-2 border border-amber-800">सूर्य</th>
-                  <th className="p-2 border border-amber-800">चन्द्र</th>
-                  <th className="p-2 border border-amber-800">मंगल</th>
-                  <th className="p-2 border border-amber-800">बुध</th>
-                  <th className="p-2 border border-amber-800">गुरू</th>
-                  <th className="p-2 border border-amber-800">शुक्र</th>
-                  <th className="p-2 border border-amber-800">शनि</th>
-                  <th className="p-2 border border-amber-800">राहु</th>
-                  <th className="p-2 border border-amber-800">केतु</th>
-                  <th className="p-2 border border-amber-800">लग्नम</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Metric / Graha' : 'मान / ग्रह'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Sun' : 'सूर्य'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Moon' : 'चन्द्र'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Mars' : 'मंगल'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Mercury' : 'बुध'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Jupiter' : 'गुरू'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Venus' : 'शुक्र'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Saturn' : 'शनि'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Rahu' : 'राहु'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Ketu' : 'केतु'}</th>
+                  <th className="p-2 border border-amber-800">{lang === 'en' ? 'Lagna' : 'लग्नम'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-amber-800 bg-amber-50/50">
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">रा. (राशि)</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">{lang === 'en' ? 'Sign (Rashi)' : 'रा. (राशि)'}</td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className="p-2 border border-amber-800 font-semibold">
                       {getPlanetInfo(k).rashi}
@@ -781,7 +912,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">अ. (अंश)</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">{lang === 'en' ? 'Deg (°)' : 'अ. (अंश)'}</td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className="p-2 border border-amber-800">
                       {getPlanetInfo(k).deg}°
@@ -790,7 +921,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">क. (कला)</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">{lang === 'en' ? 'Min (\')' : 'क. (कला)'}</td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className="p-2 border border-amber-800">
                       {getPlanetInfo(k).min}'
@@ -799,7 +930,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">वि. (विकला)</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60">{lang === 'en' ? 'Sec (")' : 'वि. (विकला)'}</td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className="p-2 border border-amber-800">
                       {getPlanetInfo(k).sec}"
@@ -808,7 +939,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title="बक्री (ब) / मार्गी (मा)">ब. मा.</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title={lang === 'en' ? 'Retrograde (R) / Direct (D)' : 'बक्री (ब) / मार्गी (मा)'}>
+                    {lang === 'en' ? 'Motion' : 'ब. मा.'}
+                  </td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className={`p-2 border border-amber-800 font-bold ${getPlanetInfo(k).bMa === 'ब' ? 'text-red-700 bg-red-100/60' : 'text-amber-900'}`}>
                       {getPlanetInfo(k).bMa}
@@ -817,7 +950,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title="उदय (उ) / अस्त (अ)">उ. अ.</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title={lang === 'en' ? 'Combust (C) / Risen (R)' : 'उदय (उ) / अस्त (अ)'}>
+                    {lang === 'en' ? 'Combust' : 'उ. अ.'}
+                  </td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className={`p-2 border border-amber-800 font-bold ${getPlanetInfo(k).uA === 'अ' ? 'text-orange-700 bg-orange-100/60' : 'text-amber-900'}`}>
                       {getPlanetInfo(k).uA}
@@ -826,7 +961,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                 </tr>
 
                 <tr>
-                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title="दीप्ति / अवस्था (उच्च, नीच, स्वगृही, आदि)">दीप्ति</td>
+                  <td className="p-2 font-bold border border-amber-800 bg-amber-100/60" title={lang === 'en' ? 'Dignity / Planetary State' : 'दीप्ति / अवस्था (उच्च, नीच, स्वगृही, आदि)'}>
+                    {lang === 'en' ? 'Dignity' : 'दीप्ति'}
+                  </td>
                   {planetOrderKeys.map((k) => (
                     <td key={k} className="p-2 border border-amber-800 text-[11px] font-semibold">
                       {getPlanetInfo(k).uJa}
@@ -843,10 +980,12 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
               <div>
                 <h3 className="font-serif font-bold text-amber-950 text-base sm:text-xl flex items-center gap-2">
                   <Layers className="w-5 h-5 text-amber-800" />
-                  <span>[ सम्पूर्ण १७ वर्ग कुण्डली चक्रहरू ]</span>
+                  <span>{lang === 'en' ? '[ Complete 17 Divisional Charts (Varga Chakras) ]' : '[ सम्पूर्ण १७ वर्ग कुण्डली चक्रहरू ]'}</span>
                 </h3>
                 <p className="text-xs text-amber-800 mt-0.5 font-sans">
-                  १. लग्न कुण्डली, २. राशि कुण्डली, ३. नवमांश कुण्डली र बाँकी १४ वर्ग कुण्डलीहरू (क्रमानुसार)
+                  {lang === 'en'
+                    ? '1. Birth Lagna Chart, 2. Moon Chart, 3. Navamsha Chart and remaining 14 divisional charts in sequence'
+                    : '१. लग्न कुण्डली, २. राशि कुण्डली, ३. नवमांश कुण्डली र बाँकी १४ वर्ग कुण्डलीहरू (क्रमानुसार)'}
                 </p>
               </div>
 
@@ -861,7 +1000,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                       : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  📋 सबै १७ कुण्डलीहरू
+                  {lang === 'en' ? '📋 All 17 Charts' : '📋 सबै १७ कुण्डलीहरू'}
                 </button>
                 <button
                   type="button"
@@ -872,7 +1011,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                       : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  🌟 मुख्य ३ (लग्न, राशि, नवमांश)
+                  {lang === 'en' ? '🌟 Primary 3 (Lagna, Moon, Navamsha)' : '🌟 मुख्य ३ (लग्न, राशि, नवमांश)'}
                 </button>
               </div>
             </div>
@@ -889,8 +1028,8 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     planetPositions={planets}
                     lagnaSignIndex={chartItem.lagnaSignIndex}
                     lang={lang}
-                    title={chartItem.titleNe}
-                    subtitle={chartItem.subtitleNe}
+                    title={lang === 'en' ? chartItem.titleEn : chartItem.titleNe}
+                    subtitle={lang === 'en' ? chartItem.subtitleEn : chartItem.subtitleNe}
                     theme="parchment"
                     activePlanetKeys={activePlanetKeys}
                     activeDashaTitle={activeDashaTitle}
@@ -908,10 +1047,12 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
               <div>
                 <h3 className="font-serif font-bold text-amber-950 text-base sm:text-xl flex items-center gap-2">
                   <Table className="w-5 h-5 text-amber-800" />
-                  <span>[ महादशा चक्र कोष्ठक - विंशोत्तरी, त्रिभागी र योगिनी ]</span>
+                  <span>{lang === 'en' ? '[ Mahadasha Cycles - Vimshottari, Tribhagi & Yogini ]' : '[ महादशा चक्र कोष्ठक - विंशोत्तरी, त्रिभागी र योगिनी ]'}</span>
                 </h3>
                 <p className="text-xs text-amber-800 mt-0.5 font-sans">
-                  जन्म नक्षत्र अनुसार गणना गरिएका विंशोत्तरी (१२० वर्ष), त्रिभागी (८० वर्ष) र योगिनी (७२ वर्ष) दशा तालिका
+                  {lang === 'en'
+                    ? 'Calculated based on birth nakshatra for Vimshottari (120 yrs), Tribhagi (80 yrs) and Yogini (72 yrs) systems'
+                    : 'जन्म नक्षत्र अनुसार गणना गरिएका विंशोत्तरी (१२० वर्ष), त्रिभागी (८० वर्ष) र योगिनी (७२ वर्ष) दशा तालिका'}
                 </p>
               </div>
 
@@ -924,7 +1065,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     dashaTab === 'all' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  📋 सबै दशा तालिका
+                  {lang === 'en' ? '📋 All Dasha Tables' : '📋 सबै दशा तालिका'}
                 </button>
                 <button
                   type="button"
@@ -933,7 +1074,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     dashaTab === 'vimshottari' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  १. विंशोत्तरी (१२०)
+                  {lang === 'en' ? '1. Vimshottari (120)' : '१. विंशोत्तरी (१२०)'}
                 </button>
                 <button
                   type="button"
@@ -942,7 +1083,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     dashaTab === 'tribhagi' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  २. त्रिभागी (८०)
+                  {lang === 'en' ? '2. Tribhagi (80)' : '२. त्रिभागी (८०)'}
                 </button>
                 <button
                   type="button"
@@ -951,7 +1092,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     dashaTab === 'yogini' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  ३. योगिनी (७२)
+                  {lang === 'en' ? '3. Yogini (72)' : '३. योगिनी (७२)'}
                 </button>
               </div>
             </div>
@@ -960,34 +1101,49 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             <div className="space-y-6">
               {(dashaTab === 'all' || dashaTab === 'vimshottari') && (
                 <SingleDashaTable
-                  title="१. विंशोत्तरी महादशा (१२० वर्ष चक्र - वर्ष मात्र)"
-                  subtitle="सूर्य ६ वर्ष, चन्द्र १० वर्ष, मङ्गल ७ वर्ष, राहु १८ वर्ष, गुरु १६ वर्ष, शनि १९ वर्ष, बुध १७ वर्ष, केतु ७ वर्ष, शुक्र २० वर्ष — कुल १२० वर्षमा अन्त्य"
-                  column1Header="ग्रह"
+                  title={lang === 'en' ? '1. Vimshottari Mahadasha (120-Year Cycle)' : '१. विंशोत्तरी महादशा (१२० वर्ष चक्र - वर्ष मात्र)'}
+                  subtitle={
+                    lang === 'en'
+                      ? 'Sun 6 yrs, Moon 10 yrs, Mars 7 yrs, Rahu 18 yrs, Jupiter 16 yrs, Saturn 19 yrs, Mercury 17 yrs, Ketu 7 yrs, Venus 20 yrs — Full 120-year span'
+                      : 'सूर्य ६ वर्ष, चन्द्र १० वर्ष, मङ्गल ७ वर्ष, राहु १८ वर्ष, गुरु १६ वर्ष, शनि १९ वर्ष, बुध १७ वर्ष, केतु ७ वर्ष, शुक्र २० वर्ष — कुल १२० वर्षमा अन्त्य'
+                  }
+                  column1Header={lang === 'en' ? 'Planet' : 'ग्रह'}
                   systemType="vimshottari"
                   data={vimshottariList}
                   birthDate={birthDateVal}
+                  lang={lang}
                 />
               )}
 
               {(dashaTab === 'all' || dashaTab === 'tribhagi') && (
                 <SingleDashaTable
-                  title="२. त्रिभागी महादशा (८० वर्ष चक्र - वर्ष र महिना)"
-                  subtitle="सूर्य ४ वर्ष ० महिना, चन्द्रमा ६ वर्ष ८ महिना, मङ्गल ४ वर्ष ८ महिना, राहु १२ वर्ष ० महिना, बृहस्पति १० वर्ष ८ महिना, शनि १२ वर्ष ८ महिना, बुध ११ वर्ष ४ महिना, केतु ४ वर्ष ८ महिना र शुक्र १३ वर्ष ४ महिना चलेर ८० वर्ष ० महिनामा अन्त्य हुने"
-                  column1Header="ग्रह"
+                  title={lang === 'en' ? '2. Tribhagi Mahadasha (80-Year Cycle - Years & Months)' : '२. त्रिभागी महादशा (८० वर्ष चक्र - वर्ष र महिना)'}
+                  subtitle={
+                    lang === 'en'
+                      ? 'Sun 4y 0m, Moon 6y 8m, Mars 4y 8m, Rahu 12y 0m, Jupiter 10y 8m, Saturn 12y 8m, Mercury 11y 4m, Ketu 4y 8m, Venus 13y 4m — Total 80 years'
+                      : 'सूर्य ४ वर्ष ० महिना, चन्द्रमा ६ वर्ष ८ महिना, मङ्गल ४ वर्ष ८ महिना, राहु १२ वर्ष ० महिना, बृहस्पति १० वर्ष ८ महिना, शनि १२ वर्ष ८ महिना, बुध ११ वर्ष ४ महिना, केतु ४ वर्ष ८ महिना र शुक्र १३ वर्ष ४ महिना चलेर ८० वर्ष ० महिनामा अन्त्य हुने'
+                  }
+                  column1Header={lang === 'en' ? 'Planet' : 'ग्रह'}
                   systemType="tribhagi"
                   data={tribhagiList}
                   birthDate={birthDateVal}
+                  lang={lang}
                 />
               )}
 
               {(dashaTab === 'all' || dashaTab === 'yogini') && (
                 <SingleDashaTable
-                  title="३. योगिनी महादशा (७२ वर्ष चक्र - वर्ष मात्र)"
-                  subtitle="मङ्गला १ वर्ष, पिङ्गला २ वर्ष, धान्या ३ वर्ष, भ्रामरी ४ वर्ष, भद्रिका ५ वर्ष, उल्का ६ वर्ष, सिद्धा ७ वर्ष, सङ्कटा ८ वर्ष — कुल ३६ वर्ष × २ चक्र = ७२ वर्षमा अन्त्य"
-                  column1Header="योगिनी"
+                  title={lang === 'en' ? '3. Yogini Mahadasha (72-Year Cycle)' : '३. योगिनी महादशा (७२ वर्ष चक्र - वर्ष मात्र)'}
+                  subtitle={
+                    lang === 'en'
+                      ? 'Mangala 1y, Pingala 2y, Dhanya 3y, Bhramari 4y, Bhadrika 5y, Ulka 6y, Siddha 7y, Sankata 8y — Total 36 yrs × 2 cycles = 72 years'
+                      : 'मङ्गला १ वर्ष, पिङ्गला २ वर्ष, धान्या ३ वर्ष, भ्रामरी ४ वर्ष, भद्रिका ५ वर्ष, उल्का ६ वर्ष, सिद्धा ७ वर्ष, सङ्कटा ८ वर्ष — कुल ३६ वर्ष × २ चक्र = ७२ वर्षमा अन्त्य'
+                  }
+                  column1Header={lang === 'en' ? 'Yogini' : 'योगिनी'}
                   systemType="yogini"
                   data={yoginiList}
                   birthDate={birthDateVal}
+                  lang={lang}
                 />
               )}
             </div>
@@ -1001,10 +1157,12 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
               <div>
                 <h3 className="font-serif font-bold text-amber-950 text-base sm:text-xl flex items-center gap-2">
                   <Crown className="w-5 h-5 text-amber-800" />
-                  <span>[ जन्मकुण्डली योग तथा राजयोग फल - Yogas & Rajyogas ]</span>
+                  <span>{lang === 'en' ? '[ Birth Chart Yogas & Raja Yogas - Yogas & Rajyogas ]' : '[ जन्मकुण्डली योग तथा राजयोग फल - Yogas & Rajyogas ]'}</span>
                 </h3>
                 <p className="text-xs text-amber-800 mt-0.5 font-sans">
-                  ज्योतिषशास्त्र अनुसार जन्मकुण्डलीमा विद्यमान राजयोग, महापुरुष योग, धनयोग तथा अन्य शुभ/अशुभ योगहरूको विस्तृत तालिका
+                  {lang === 'en'
+                    ? 'Vedic astrological combinations including Raja Yogas, Mahapurusha Yogas, Dhana Yogas and auspicious alignments'
+                    : 'ज्योतिषशास्त्र अनुसार जन्मकुण्डलीमा विद्यमान राजयोग, महापुरुष योग, धनयोग तथा अन्य शुभ/अशुभ योगहरूको विस्तृत तालिका'}
                 </p>
               </div>
 
@@ -1017,7 +1175,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     yogaFilterTab === 'all' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  📋 सम्पूर्ण योग ({yogaList.length})
+                  {lang === 'en' ? `📋 All Yogas (${yogaList.length})` : `📋 सम्पूर्ण योग (${yogaList.length})`}
                 </button>
                 <button
                   type="button"
@@ -1026,7 +1184,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     yogaFilterTab === 'present' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  🌟 उपस्थित योग मात्र ({yogaList.filter((y) => y.isPresent).length})
+                  {lang === 'en'
+                    ? `🌟 Present Yogas (${yogaList.filter((y) => y.isPresent).length})`
+                    : `🌟 उपस्थित योग मात्र (${yogaList.filter((y) => y.isPresent).length})`}
                 </button>
                 <button
                   type="button"
@@ -1035,7 +1195,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     yogaFilterTab === 'raj' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  👑 राजयोग ({yogaList.filter((y) => y.type === 'raj' || y.type === 'mahapurusha' || y.type === 'vipareeta' || y.type === 'neechabhanga').length})
+                  {lang === 'en'
+                    ? `👑 Raja Yogas (${yogaList.filter((y) => y.type === 'raj' || y.type === 'mahapurusha' || y.type === 'vipareeta' || y.type === 'neechabhanga').length})`
+                    : `👑 राजयोग (${yogaList.filter((y) => y.type === 'raj' || y.type === 'mahapurusha' || y.type === 'vipareeta' || y.type === 'neechabhanga').length})`}
                 </button>
                 <button
                   type="button"
@@ -1044,7 +1206,9 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                     yogaFilterTab === 'dhana' ? 'bg-amber-800 text-amber-50 shadow' : 'text-amber-900 hover:bg-amber-300/50'
                   }`}
                 >
-                  💰 धनयोग/शुभयोग ({yogaList.filter((y) => y.type === 'dhana' || y.type === 'benefic').length})
+                  {lang === 'en'
+                    ? `💰 Wealth/Auspicious (${yogaList.filter((y) => y.type === 'dhana' || y.type === 'benefic').length})`
+                    : `💰 धनयोग/शुभयोग (${yogaList.filter((y) => y.type === 'dhana' || y.type === 'benefic').length})`}
                 </button>
               </div>
             </div>
@@ -1052,7 +1216,7 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             {/* Yogas Cards Grid */}
             {filteredYogas.length === 0 ? (
               <div className="p-6 text-center text-amber-900 italic font-serif bg-amber-50/60 rounded-xl border border-amber-300">
-                चयन गरिएको फिल्टर अनुसार कुनै योग भेटिएन।
+                {lang === 'en' ? 'No yogas found for the selected filter.' : 'चयन गरिएको फिल्टर अनुसार कुनै योग भेटिएन।'}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1083,11 +1247,12 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                             ) : (
                               <Star className="w-4 h-4 text-amber-700 inline" />
                             )}
-                            <span>{yoga.nameNe}</span>
+                            <span>{lang === 'en' ? (yoga.nameEn || yoga.nameNe) : yoga.nameNe}</span>
                           </h4>
                           {yoga.involvedPlanets && yoga.involvedPlanets.length > 0 && (
                             <span className="text-[11px] text-amber-800 font-sans">
-                              सम्बन्धित ग्रह: {yoga.involvedPlanets.join(', ')}
+                              {lang === 'en' ? 'Involved Planets: ' : 'सम्बन्धित ग्रह: '}
+                              {yoga.involvedPlanets.join(', ')}
                             </span>
                           )}
                         </div>
@@ -1110,16 +1275,16 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                             }`}
                           >
                             {yoga.type === 'raj'
-                              ? '👑 राजयोग'
+                              ? (lang === 'en' ? '👑 Raja Yoga' : '👑 राजयोग')
                               : yoga.type === 'mahapurusha'
-                              ? '💎 महापुरुष'
+                              ? (lang === 'en' ? '💎 Mahapurusha' : '💎 महापुरुष')
                               : yoga.type === 'dhana'
-                              ? '💰 धन योग'
+                              ? (lang === 'en' ? '💰 Dhana Yoga' : '💰 धन योग')
                               : yoga.type === 'vipareeta'
-                              ? '🛡️ विपरीत राजयोग'
+                              ? (lang === 'en' ? '🛡️ Vipareeta Raja' : '🛡️ विपरीत राजयोग')
                               : yoga.type === 'dosha'
-                              ? '⚠️ दोष'
-                              : '✨ शुभ योग'}
+                              ? (lang === 'en' ? '⚠️ Dosha' : '⚠️ दोष')
+                              : (lang === 'en' ? '✨ Benefic Yoga' : '✨ शुभ योग')}
                           </span>
 
                           {/* Presence Badge */}
@@ -1128,21 +1293,29 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
                               isPresent ? 'bg-emerald-800 text-emerald-50' : 'bg-slate-300 text-slate-700'
                             }`}
                           >
-                            {isPresent ? `✅ ${yoga.strengthNe || 'उपस्थित'}` : '❌ अनुपस्थित'}
+                            {lang === 'en'
+                              ? isPresent
+                                ? `✅ ${yoga.strengthEn || 'Present'}`
+                                : '❌ Absent'
+                              : isPresent
+                              ? `✅ ${yoga.strengthNe || 'उपस्थित'}`
+                              : '❌ अनुपस्थित'}
                           </span>
                         </div>
                       </div>
 
                       <div className="space-y-1.5 text-amber-950">
                         <p className="text-xs text-amber-900">
-                          <span className="font-bold text-amber-950">नियम:</span> {yoga.ruleNe}
+                          <span className="font-bold text-amber-950">{lang === 'en' ? 'Rule:' : 'नियम:'}</span>{' '}
+                          {lang === 'en' ? (yoga.ruleEn || yoga.ruleNe) : yoga.ruleNe}
                         </p>
                         <p className="text-xs font-semibold text-amber-950 leading-relaxed">
-                          <span className="font-bold text-amber-950">फल / प्रभाव:</span> {yoga.descriptionNe}
+                          <span className="font-bold text-amber-950">{lang === 'en' ? 'Effect / Influence:' : 'फल / प्रभाव:'}</span>{' '}
+                          {lang === 'en' ? (yoga.descriptionEn || yoga.descriptionNe) : yoga.descriptionNe}
                         </p>
-                        {yoga.actualConditionNe && (
+                        {(yoga.actualConditionEn || yoga.actualConditionNe) && (
                           <p className="text-[11px] italic text-amber-900 bg-amber-200/50 p-1.5 rounded border border-amber-300/60 mt-1">
-                            {yoga.actualConditionNe}
+                            {lang === 'en' ? (yoga.actualConditionEn || yoga.actualConditionNe) : yoga.actualConditionNe}
                           </p>
                         )}
                       </div>
@@ -1163,22 +1336,24 @@ ${av.namakshar} काराक्षरस्य ${av.yoni} योनिः ${a
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-100/80 p-4 sm:p-5 rounded-2xl border border-amber-300 text-xs sm:text-sm font-serif">
               <div className="space-y-1">
                 <p>
-                  <span className="font-bold text-amber-950">लेखक / ज्योतिषाचार्य :</span>{' '}
+                  <span className="font-bold text-amber-950">{lang === 'en' ? 'Author / Astrologer:' : 'लेखक / ज्योतिषाचार्य :'}</span>{' '}
                   <span className="font-bold text-red-800">{authorName}</span>
                 </p>
                 <p>
-                  <span className="font-bold text-amber-950">स्थान :</span> {authorLocation}
+                  <span className="font-bold text-amber-950">{lang === 'en' ? 'Location:' : 'स्थान :'}</span> {authorLocation}
                 </p>
                 <p>
-                  <span className="font-bold text-amber-950">फोन / सम्पर्क :</span> {authorPhone}
+                  <span className="font-bold text-amber-950">{lang === 'en' ? 'Phone / Contact:' : 'फोन / सम्पर्क :'}</span> {authorPhone}
                 </p>
               </div>
 
               <div className="text-center border-t sm:border-t-0 sm:border-l border-amber-400 pt-3 sm:pt-0 sm:pl-6 w-full sm:w-auto">
                 <div className="w-24 h-12 mx-auto border-b border-amber-800 border-dashed flex items-end justify-center pb-1 text-[10px] text-amber-700 italic">
-                  (हस्ताक्षर / मुहर)
+                  {lang === 'en' ? '(Signature / Seal)' : '(हस्ताक्षर / मुहर)'}
                 </div>
-                <p className="text-[11px] font-bold text-amber-900 mt-1">आधिकारिक पण्डित हस्ताक्षर</p>
+                <p className="text-[11px] font-bold text-amber-900 mt-1">
+                  {lang === 'en' ? 'Authorized Astrologer Seal & Signature' : 'आधिकारिक पण्डित हस्ताक्षर'}
+                </p>
               </div>
             </div>
           </div>

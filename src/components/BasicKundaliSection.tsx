@@ -504,11 +504,11 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
               <div className="space-y-1 text-center sm:text-left">
                 <h4 className="font-serif font-bold text-amber-100 text-base flex items-center justify-center sm:justify-start gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? 'थप १७ कुण्डली र परम्परागत चिना हेर्न चाहनुहुन्छ?' : 'Want 17 Shodashvarga Charts & Traditional Cheena?'}</span>
+                  <span>{lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना) हेर्न चाहनुहुन्छ?' : 'Want Full Cheena with 17 Divisional Charts?'}</span>
                 </h4>
                 <p className="text-xs text-amber-300/80 max-w-xl">
                   {lang === 'ne'
-                    ? 'सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग), विंशोत्तरी/त्रिभागी दशा र A4 चिना प्रिन्टका लागि सदस्यता लिनुहोस्।'
+                    ? 'सम्पूर्ण १६ वर्ग कुण्डली (षोडशवर्ग), विंशोत्तरी/त्रिभागी दशा र पूरा परम्परागत नेपाली चिना प्रिन्टका लागि सदस्यता लिनुहोस्।'
                     : 'Explore all 16 Divisional Charts, Vimshottari Dasha, and Full Traditional Cheena with active membership.'}
                 </p>
               </div>
@@ -516,14 +516,14 @@ export const BasicKundaliSection: React.FC<BasicKundaliSectionProps> = ({
                 type="button"
                 onClick={() => {
                   if (!isSubscribed) {
-                    openSubscriptionModal(lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China');
+                    openSubscriptionModal(lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना)' : 'Full Cheena (17 Kundali)');
                   } else if (onOpenChina17) {
                     onOpenChina17();
                   }
                 }}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-serif font-bold text-xs sm:text-sm shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer"
               >
-                <span>{lang === 'ne' ? '१७ कुण्डली र चिना खोल्नुहोस्' : 'Open 17 Kundali & China'}</span>
+                <span>{lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना) खोल्नुहोस्' : 'Open Full Cheena (17 Kundali)'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

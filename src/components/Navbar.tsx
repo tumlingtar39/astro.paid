@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PANDIT_INFO } from '../data/astrologyData';
 import { Language } from '../types';
-import { Sparkles, Compass, Info, Phone, Calendar, Globe, Menu, X, BookOpen, User, ArrowRight, Heart, MessageSquare, Sun, Moon, ShieldCheck, LogIn, KeyRound, Crown, CreditCard } from 'lucide-react';
+import { Sparkles, Compass, Info, Phone, Calendar, Globe, Menu, X, BookOpen, User, ArrowRight, Heart, MessageSquare, Sun, Moon, ShieldCheck, LogIn, KeyRound, Crown, CreditCard, LayoutGrid, Home, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, SUPER_ADMIN_EMAIL } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAccessibility } from '../context/AccessibilityContext';
 import { SUBSCRIPTION_PLANS } from '../lib/subscriptionService';
+import { MobileDashboardGrid } from './dashboard/MobileDashboardGrid';
 
 interface NavbarProps {
   activeTab: string;
@@ -31,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     isSubscribed,
     openSubscriptionModal,
   } = useSubscription();
+  const { openSettings } = useAccessibility();
 
   // Safe tab selection handler to avoid crashes
   const handleTabChange = (tabId: string) => {
@@ -38,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       if ((tabId === 'china17' || tabId === 'phalit') && !isSubscribed) {
         openSubscriptionModal(
           tabId === 'china17'
-            ? (lang === 'ne' ? '१७ कुण्डली र चिना (17 Kundali & China)' : '17 Kundali & China')
+            ? (lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना)' : 'Full Cheena (17 Kundali)')
             : (lang === 'ne' ? 'चिना फलित (China Phalit)' : 'China Phalit')
         );
       }
@@ -77,6 +80,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const tabs = [
     {
+      id: 'home',
+      labelNe: '🏠 होम (Home)',
+      labelEn: '🏠 Home',
+      shortNe: 'होम',
+      shortEn: 'Home',
+      icon: Home,
+      descNe: 'वैदिक ज्योतिष गृह, ४-कलम ग्रिड मेनु र सम्पूर्ण सेवाहरू',
+      descEn: 'Vedic Astrology Home, 4-column grid & quick tools',
+    },
+    {
       id: 'kundali',
       labelNe: 'कुण्डली',
       labelEn: 'Kundali',
@@ -88,10 +101,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
     {
       id: 'china17',
-      labelNe: '१७ कुण्डली र चिना',
-      labelEn: '17 Kundali & China',
-      shortNe: '१७ चिना',
-      shortEn: '17 China',
+      labelNe: 'पूरा चिना (१७ कुण्डली सहितको चिना)',
+      labelEn: 'Full Cheena (17 Kundali)',
+      shortNe: 'पूरा चिना',
+      shortEn: 'Full Cheena',
       icon: Sparkles,
       descNe: '१ जन्म लग्न + १६ वर्ग कुण्डली (षोडशवर्ग), परम्परागत चिना, दशा र फलित (सदस्यता)',
       descEn: '17 Kundali Charts, Traditional Cheena, 16 Shodashvarga & Predictions (Member)',
@@ -197,11 +210,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Language Switcher */}
             <button
               onClick={() => setLang(lang === 'ne' ? 'en' : 'ne')}
-              className="flex items-center gap-1 bg-amber-900/90 hover:bg-amber-800 px-2 py-0.5 rounded-full text-[11px] font-semibold border border-amber-600/60 transition-colors active:scale-95 text-amber-200"
+              className="flex items-center gap-1 bg-amber-900/90 hover:bg-amber-800 px-2 py-0.5 rounded-full text-[11px] font-semibold border border-amber-600/60 transition-colors active:scale-95 text-amber-200 cursor-pointer"
               title="भाषा फेर्नुहोस् / Toggle Language"
             >
               <Globe className="w-3 h-3 text-amber-300" />
               <span>{lang === 'ne' ? 'English' : 'नेपाली'}</span>
+            </button>
+
+            {/* App Settings & Accessibility Button */}
+            <button
+              onClick={openSettings}
+              className="flex items-center gap-1 bg-amber-900/90 hover:bg-amber-800 px-2 py-0.5 rounded-full text-[11px] font-semibold border border-amber-600/60 transition-colors active:scale-95 text-amber-200 cursor-pointer"
+              title={lang === 'ne' ? 'एप सेटिङ तथा दृष्टि सुलभता (अक्षर आकार)' : 'App Settings & Accessibility'}
+            >
+              <Settings className="w-3 h-3 text-amber-300" />
+              <span>{lang === 'ne' ? 'सेटिङ' : 'Settings'}</span>
             </button>
 
             {/* Customer Profile / Admin Status Button */}
@@ -252,7 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
           {/* Logo & Pandit Name */}
           <div
-            onClick={() => handleTabChange('kundali')}
+            onClick={() => handleTabChange('home')}
             className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group select-none"
           >
             <div className="relative">
@@ -316,71 +339,73 @@ export const Navbar: React.FC<NavbarProps> = ({
               <User className="w-4 h-4 text-amber-300" />
             </button>
 
-            {/* Mobile Hamburger Drawer Menu Toggle */}
+            {/* Settings & Accessibility Quick Button for Mobile */}
+            <button
+              onClick={openSettings}
+              className="p-2 text-amber-200 hover:text-amber-50 bg-amber-900/70 hover:bg-amber-800/80 rounded-xl border border-amber-700/60 active:scale-95 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+              title={lang === 'ne' ? 'एप सेटिङ तथा दृष्टि सुलभता' : 'Settings & Vision Accessibility'}
+              aria-label="App Settings"
+            >
+              <Settings className="w-4 h-4 text-amber-300" />
+            </button>
+
+            {/* Mobile / Quick Grid Drawer Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-amber-200 hover:text-amber-50 bg-amber-900/70 hover:bg-amber-800/80 rounded-xl border border-amber-700/60 active:scale-95 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+              className="p-2 text-amber-200 hover:text-amber-50 bg-amber-900/70 hover:bg-amber-800/80 rounded-xl border border-amber-700/60 active:scale-95 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
               aria-label="Toggle navigation menu"
+              title="४x ग्रिड मेनु"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5 text-amber-300" /> : <Menu className="w-5 h-5 text-amber-300" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 text-amber-300" /> : <LayoutGrid className="w-5 h-5 text-amber-300" />}
             </button>
           </div>
         </div>
-
-        {/* Desktop / Laptop Navigation Tabs in 2 Balanced Lines (4 items per line, all 8 items fully visible at once) */}
-        <div className="hidden md:block max-w-7xl mx-auto px-3 sm:px-4 pb-2.5">
-          <nav className="bg-amber-900/40 p-1.5 sm:p-2 rounded-2xl border border-amber-800/60 shadow-inner">
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap active:scale-[0.98] ${
-                      isActive
-                        ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-amber-950 shadow-md border border-amber-200 scale-[1.01]'
-                        : 'text-amber-200 hover:text-amber-50 hover:bg-amber-900/70 border border-amber-800/40 bg-amber-950/40'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-950' : 'text-amber-400'}`} />
-                    <span className="truncate">{lang === 'ne' ? tab.labelNe : tab.labelEn}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-        </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar (Fixed for Smartphones md:hidden) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-amber-950/95 backdrop-blur-lg border-t border-amber-800/80 shadow-[0_-8px_20px_rgba(0,0,0,0.5)] px-0.5 py-1 pb-safe">
-        <div className="grid grid-cols-8 gap-0.5 max-w-full mx-auto">
+      {/* Universal Bottom Navigation Dock - All Menu items (Home, Kundali, 17 China, Phalit...) placed at the bottom */}
+      <nav
+        aria-label="Main Navigation Dock"
+        className="fixed bottom-0 sm:bottom-2 left-0 right-0 sm:left-1/2 sm:-translate-x-1/2 z-40 bg-amber-950/95 backdrop-blur-xl border-t sm:border border-amber-800/80 sm:border-amber-500/40 sm:rounded-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.6)] sm:shadow-2xl px-1.5 sm:px-3 py-1.5 sm:py-2 pb-safe max-w-5xl w-full sm:w-[96%] transition-all"
+      >
+        <div className="flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth px-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            const isActive = activeTab === tab.id || (tab.id === 'home' && activeTab === 'dashboard');
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center py-1 px-0.5 rounded-lg transition-all duration-200 select-none active:scale-95 min-h-[44px] ${
+                className={`shrink-0 flex flex-col items-center justify-center py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl transition-all duration-200 select-none active:scale-95 cursor-pointer ${
                   isActive
-                    ? 'bg-amber-800/80 text-amber-300 font-bold border border-amber-600/80 shadow-sm'
-                    : 'text-amber-200/80 hover:text-amber-100 hover:bg-amber-900/40'
+                    ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-black shadow-md border border-amber-200 min-w-[60px] sm:min-w-[76px] scale-[1.02]'
+                    : 'text-amber-200/90 hover:text-amber-50 hover:bg-amber-900/60 bg-amber-900/30 border border-amber-800/40 min-w-[54px] sm:min-w-[70px]'
                 }`}
               >
-                <div className={`p-0.5 rounded-md ${isActive ? 'bg-amber-500 text-amber-950 shadow-xs' : ''}`}>
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-950' : 'text-amber-400'}`} />
-                </div>
-                <span className="text-[7.5px] sm:text-[8.5px] mt-0.5 tracking-tighter truncate max-w-full leading-none font-medium text-center">
+                <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 mb-0.5 ${isActive ? 'text-stone-950 stroke-[2.5]' : 'text-amber-400 stroke-[1.75]'}`} />
+                <span className="text-[10px] sm:text-[11px] whitespace-nowrap leading-tight font-bold">
                   {lang === 'ne' ? tab.shortNe : tab.shortEn}
                 </span>
               </button>
             );
           })}
+
+          {/* Full 4-Column Grid Drawer Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className={`shrink-0 flex flex-col items-center justify-center py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl transition-all duration-200 select-none active:scale-95 border min-w-[54px] sm:min-w-[70px] cursor-pointer ${
+              mobileMenuOpen
+                ? 'bg-amber-800 text-amber-200 border-amber-500 shadow-sm'
+                : 'bg-amber-900/50 hover:bg-amber-800/60 text-amber-300 border-amber-700/50'
+            }`}
+            title="४x ग्रिड मेनु खोल्नुहोस्"
+          >
+            <LayoutGrid className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-300 mb-0.5" />
+            <span className="text-[10px] sm:text-[11px] whitespace-nowrap leading-tight font-bold">
+              {lang === 'ne' ? '४x मेनु' : 'Grid'}
+            </span>
+          </button>
         </div>
-      </div>
+      </nav>
 
       {/* Mobile Drawer Overlay / Menu Sheet */}
       {mobileMenuOpen && (
@@ -393,187 +418,57 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Drawer Sheet */}
-          <div className="bg-amber-950 border-t-2 border-amber-500/80 rounded-t-3xl p-4 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto border-x border-amber-800/60">
+          <div className="bg-[#fcfaf6] dark:bg-[#1c130b] border-t-2 border-amber-500 rounded-t-3xl p-3 sm:p-4 shadow-2xl max-h-[90vh] overflow-y-auto border-x border-amber-800/60">
             {/* Sheet Handle Indicator */}
-            <div className="w-12 h-1.5 bg-amber-700/60 rounded-full mx-auto" />
+            <div className="w-12 h-1.5 bg-stone-300 dark:bg-amber-800/70 rounded-full mx-auto mb-2" />
 
             {/* Header in Mobile Drawer */}
-            <div className="flex items-center justify-between pb-2 border-b border-amber-800/60">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-amber-800/60">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-amber-800 border border-amber-500/50 flex items-center justify-center text-amber-300 font-serif font-bold text-sm">
+                <div className="w-9 h-9 rounded-full bg-amber-800 border border-amber-500/50 flex items-center justify-center text-amber-300 font-serif font-bold text-sm shadow-xs">
                   ॐ
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-amber-100 font-serif">
+                  <h3 className="text-xs font-bold text-stone-900 dark:text-amber-100 font-serif">
                     {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
                   </h3>
-                  <p className="text-[10px] text-amber-400/90">
-                    {lang === 'ne' ? 'मुख्य सेवा रोज्नुहोस्' : 'Select Service'}
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                    {lang === 'ne' ? 'मोबाइल ड्यासबोर्ड (४-कलम ग्रिड)' : 'Mobile Dashboard (4-Column Grid)'}
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 text-amber-400 hover:text-amber-100 bg-amber-900/60 rounded-full border border-amber-700/50"
+                className="p-1.5 text-stone-600 dark:text-amber-300 hover:text-stone-900 dark:hover:text-amber-100 bg-stone-200/80 dark:bg-amber-900/60 rounded-full border border-stone-300 dark:border-amber-700/50"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Premium Subscription Plan Banner in Drawer */}
-            <div
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openSubscriptionModal();
-              }}
-              className="p-3 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-stone-950 border border-amber-300 shadow-lg cursor-pointer flex items-center justify-between transition-all active:scale-[0.98]"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-stone-950/20 text-stone-950">
-                  <Crown className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-black">
-                    {isSubscribed
-                      ? (lang === 'ne' ? `👑 सक्रिय: ${currentPlan.toUpperCase()} योजना` : `👑 Active: ${currentPlan.toUpperCase()} Plan`)
-                      : (lang === 'ne' ? '👑 कुण्डली एवं फलित योजना (रु ३९९+)' : '👑 Kundali & Phalit Plans (Rs 399+)')}
-                  </div>
-                  <div className="text-[10px] font-medium opacity-90">
-                    {lang === 'ne' ? '३ महिना, ६ महिना, १ वर्ष वा आजीवन योजना' : '3 Mo, 6 Mo, 1 Year or Lifetime'}
-                  </div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-stone-950 shrink-0" />
-            </div>
-
-            {/* Navigation Options List */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-amber-400/90 uppercase tracking-wider px-1">
-                {lang === 'ne' ? 'ज्योतिष सेवाहरू (Services)' : 'Astrology Services'}
-              </p>
-
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition-all active:scale-[0.98] ${
-                      isActive
-                        ? 'bg-amber-800/90 border-amber-500 text-amber-50 shadow-md font-bold'
-                        : 'bg-amber-900/30 border-amber-800/50 text-amber-200 hover:bg-amber-900/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-xl ${isActive ? 'bg-amber-500 text-amber-950' : 'bg-amber-900/80 text-amber-400'}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs sm:text-sm font-bold">
-                          {lang === 'ne' ? tab.labelNe : tab.labelEn}
-                        </div>
-                        <div className="text-[10px] text-amber-300/70 font-normal">
-                          {lang === 'ne' ? tab.descNe : tab.descEn}
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowRight className={`w-4 h-4 ${isActive ? 'text-amber-300' : 'text-amber-500/60'}`} />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Extra Actions in Drawer */}
-            <div className="pt-2 border-t border-amber-800/60 space-y-2">
-              <p className="text-[11px] font-bold text-amber-400/90 uppercase tracking-wider px-1">
-                {lang === 'ne' ? 'अन्य सुविधाहरू (Quick Access)' : 'Quick Access'}
-              </p>
-
-              <div className="grid grid-cols-2 gap-2">
-                {/* Visiting Card Button */}
-                {onOpenVisitingCard && (
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      onOpenVisitingCard();
-                    }}
-                    className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 font-bold text-xs border border-amber-300 shadow-sm active:scale-95 transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>{lang === 'ne' ? 'भिजिटिङ कार्ड' : 'Visiting Card'}</span>
-                  </button>
-                )}
-
-                {/* Guru Parichaya Button */}
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setShowInfoModal(true);
-                  }}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-amber-900/80 text-amber-200 hover:text-amber-50 font-semibold text-xs border border-amber-700/60 active:scale-95 transition-all"
-                >
-                  <User className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'ne' ? 'गुरु परिचय' : 'About Guru'}</span>
-                </button>
-              </div>
-
-              {/* Theme Toggle Button in Drawer */}
-              <button
-                onClick={() => {
-                  toggleTheme();
+            {/* Mobile Dashboard 4-Column Grid */}
+            <div className="py-2">
+              <MobileDashboardGrid
+                lang={lang}
+                setLang={setLang}
+                activeTab={activeTab}
+                onSelectTab={(tabId) => {
+                  setMobileMenuOpen(false);
+                  handleTabChange(tabId);
                 }}
-                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold border transition-all active:scale-95 shadow-sm ${
-                  isDark
-                    ? 'bg-amber-900/50 text-amber-200 border-amber-700/60 hover:bg-amber-800/60'
-                    : 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {isDark ? (
-                    <Sun className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  ) : (
-                    <Moon className="w-4 h-4 text-indigo-700 fill-indigo-700" />
-                  )}
-                  <span>
-                    {lang === 'ne' ? 'थिम मोड (Theme Mode)' : 'Theme Mode'}
-                  </span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  isDark ? 'bg-amber-800 text-amber-200' : 'bg-amber-300 text-amber-950'
-                }`}>
-                  {isDark
-                    ? (lang === 'ne' ? '☀️ लाइट मोडमा फेर्नुहोस्' : '☀️ Switch to Light')
-                    : (lang === 'ne' ? '🌙 डार्क मोडमा फेर्नुहोस्' : '🌙 Switch to Dark')}
-                </span>
-              </button>
-
-              {/* Language Switch Button */}
-              <button
-                onClick={() => {
-                  setLang(lang === 'ne' ? 'en' : 'ne');
+                onOpenVisitingCard={() => {
+                  setMobileMenuOpen(false);
+                  onOpenVisitingCard?.();
                 }}
-                className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-amber-900/40 text-amber-300 hover:text-amber-100 text-xs font-semibold border border-amber-800/60 active:scale-95 transition-all"
-              >
-                <Globe className="w-4 h-4 text-amber-400" />
-                <span>
-                  {lang === 'ne' ? 'English भाषामा स्विच गर्नुहोस्' : 'Switch to Nepali Language'}
-                </span>
-              </button>
-            </div>
-
-            {/* Quick Contact Line */}
-            <div className="pt-2 border-t border-amber-800/60 text-center text-xs text-amber-300/80">
-              <a
-                href="https://wa.me/9779863991384"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-emerald-400 font-bold hover:underline"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span>WhatsApp: {PANDIT_INFO.whatsappPhone}</span>
-              </a>
+                onOpenSubscriptionModal={() => {
+                  setMobileMenuOpen(false);
+                  openSubscriptionModal();
+                }}
+                onOpenAuthModal={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal();
+                }}
+              />
             </div>
           </div>
         </div>

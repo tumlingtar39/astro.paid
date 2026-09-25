@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { KundaliInput, Language } from '../../types';
-import { CITY_PRESETS, CityPreset } from '../../utils/cityPresets';
+import { CITY_PRESETS, CityPreset, searchCityPresets, NEPAL_77_DISTRICTS, WORLD_COUNTRIES } from '../../utils/cityPresets';
 import {
   convertBSToAD,
   convertADToBS,
@@ -12,18 +12,20 @@ import {
   NEPALI_MONTHS_EN,
   BSDate
 } from '../../utils/nepaliCalendar';
-import { Calendar, Clock, MapPin, Globe, Compass, AlertTriangle, Sparkles, Check, ArrowRightLeft } from 'lucide-react';
+import { Calendar, Clock, MapPin, Globe, Compass, AlertTriangle, Sparkles, Check, ArrowRightLeft, Search, X } from 'lucide-react';
 
 interface BirthDetailsFormProps {
   lang: Language;
   onSubmit: (input: KundaliInput) => void;
   initialValues?: KundaliInput;
+  submitButtonText?: string;
 }
 
 export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
   lang,
   onSubmit,
-  initialValues
+  initialValues,
+  submitButtonText,
 }) => {
   const [name, setName] = useState(initialValues?.name || 'रामप्रसाद शर्मा (Ram Sharma)');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialValues?.gender || 'male');
@@ -54,6 +56,19 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
   const [isDst, setIsDst] = useState<boolean>(initialValues?.isDst || false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [placeCategory, setPlaceCategory] = useState<'all' | 'nepal' | 'world' | 'india' | 'gulf'>('all');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCityDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Sync BS to AD whenever BS fields change
   const handleBSDateChange = (newYear: number, newMonth: number, newDay: number) => {
@@ -83,14 +98,10 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
     }
   };
 
-  const filteredCities = CITY_PRESETS.filter(
-    (c) =>
-      c.nameNe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.nameEn.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCities = searchCityPresets(searchQuery, placeCategory);
 
   const handleSelectCity = (city: CityPreset) => {
-    setBirthPlace(city.nameEn);
+    setBirthPlace(city.nameNe);
     setLatitude(city.lat);
     setLongitude(city.lon);
     setTimezone(city.tz);
@@ -131,22 +142,6 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
 
   return (
     <div className="bg-gradient-to-b from-amber-950/90 to-black/95 border border-amber-700/60 rounded-2xl p-5 sm:p-7 shadow-2xl backdrop-blur-md">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-amber-800/50">
-        <div className="w-10 h-10 rounded-xl bg-amber-600/30 border border-amber-500/50 flex items-center justify-center text-amber-300">
-          <Sparkles className="w-5 h-5" />
-        </div>
-        <div>
-          <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-100">
-            {lang === 'ne' ? '१७ कुण्डली र चिना विवरण प्रविष्टि (17 Kundali & China)' : '17 Kundali & China Entry Form'}
-          </h2>
-          <p className="text-xs text-amber-300/80">
-            {lang === 'ne'
-              ? 'वि.सं. (BS) वा ई.सं. (AD) मा सटिक जन्ममिति रोजेर १७ कुण्डली र परम्परागत चिना निर्माण गर्नुहोस्।'
-              : 'Enter birth particulars to generate 17 Kundali charts & Traditional Cheena.'}
-          </p>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Name & Gender */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -341,51 +336,202 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
             />
           </div>
 
-          <div className="space-y-1.5 relative">
-            <label className="text-xs font-semibold text-amber-200 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-amber-400" />
-              <span>{lang === 'ne' ? 'जन्म स्थान / नगर (Birth Place Search)' : 'Birth Place Search'}</span>
+          <div className="space-y-1.5 relative" ref={dropdownRef}>
+            <label className="text-xs font-semibold text-amber-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                <span>{lang === 'ne' ? 'जन्म स्थान / नेपालका ७७ जिल्ला वा विश्वका देशहरू' : 'Birth Place / Nepal 77 Districts & World Countries'}</span>
+                <span className="text-red-400">*</span>
+              </span>
+              <span className="text-[11px] text-amber-400/90 font-normal">
+                {lang === 'ne' ? '७७ जिल्ला र विश्वका देशहरू उपलब्ध' : '77 Districts & World Countries'}
+              </span>
             </label>
-            <input
-              type="text"
-              value={birthPlace}
-              onChange={(e) => {
-                setBirthPlace(e.target.value);
-                setSearchQuery(e.target.value);
-                setShowCityDropdown(true);
-              }}
-              onFocus={() => setShowCityDropdown(true)}
-              placeholder="e.g. Kathmandu, Pokhara, New Delhi, London"
-              className="w-full bg-amber-950/60 border border-amber-700/70 rounded-xl px-3.5 py-2.5 text-sm text-amber-100 focus:outline-none focus:border-amber-400"
-            />
 
-            {/* City Preset Dropdown */}
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={birthPlace}
+                onChange={(e) => {
+                  setBirthPlace(e.target.value);
+                  setSearchQuery(e.target.value);
+                  setShowCityDropdown(true);
+                }}
+                onFocus={() => setShowCityDropdown(true)}
+                placeholder={lang === 'ne' ? 'नेपालको कुनै पनि जिल्ला वा विश्वको देश खोज्नुहोस् (उदा. झापा, संखुवासभा, टोकियो, लण्डन...)' : 'Search any district of Nepal or world country (e.g. Kathmandu, London, New York...)'}
+                className="w-full bg-amber-950/70 border border-amber-600/80 rounded-xl pl-9 pr-8 py-2.5 text-sm text-amber-100 placeholder-amber-400/50 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 font-medium"
+              />
+              <Search className="w-4 h-4 text-amber-400 absolute left-3 top-3 pointer-events-none" />
+              {birthPlace && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBirthPlace('');
+                    setSearchQuery('');
+                    setShowCityDropdown(true);
+                  }}
+                  className="absolute right-2.5 top-2.5 text-amber-400 hover:text-amber-200 p-0.5 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Selected Location Confirmation Pill */}
+            {birthPlace && (
+              <div className="text-[11px] text-amber-300/90 bg-amber-900/30 border border-amber-700/50 rounded-lg px-2.5 py-1 flex items-center justify-between gap-2 flex-wrap">
+                <span className="truncate">
+                  📍 <strong className="text-amber-200">{birthPlace}</strong>
+                </span>
+                <span className="text-[10px] font-mono text-amber-400">
+                  {latitude.toFixed(2)}°N, {longitude.toFixed(2)}°E | UTC{timezone >= 0 ? `+${timezone}` : timezone}
+                </span>
+              </div>
+            )}
+
+            {/* Rich City & District Preset Dropdown */}
             {showCityDropdown && (
-              <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-amber-950 border border-amber-700 rounded-xl shadow-2xl divide-y divide-amber-900/60">
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-amber-400 bg-amber-900/40">
-                  {lang === 'ne' ? 'शीघ्र नगर रोज्नुहोस् (Select City Preset):' : 'Select City Preset:'}
-                </div>
-                {filteredCities.map((city, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectCity(city)}
-                    className="w-full text-left px-3.5 py-2 text-xs text-amber-100 hover:bg-amber-800/50 transition-colors flex items-center justify-between"
-                  >
-                    <span className="font-medium">{city.nameNe}</span>
-                    <span className="text-[11px] text-amber-400/80">
-                      Lat: {city.lat}°, Lon: {city.lon}° (UTC{city.tz >= 0 ? `+${city.tz}` : city.tz})
+              <div className="absolute z-40 left-0 right-0 mt-1 max-h-80 overflow-hidden bg-gradient-to-b from-amber-950 via-slate-950 to-black border-2 border-amber-600/90 rounded-2xl shadow-2xl flex flex-col backdrop-blur-md">
+                {/* Header & Filter Tabs */}
+                <div className="p-2.5 bg-amber-900/40 border-b border-amber-800/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{lang === 'ne' ? 'नेपालका ७७ जिल्ला तथा विश्वका देशहरू चयन गर्नुहोस्:' : 'Select Nepal District or World Country:'}</span>
                     </span>
-                  </button>
-                ))}
-                <div className="p-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowCityDropdown(false)}
-                    className="text-[11px] text-amber-400 underline"
-                  >
-                    {lang === 'ne' ? 'ड्रपडाउन बन्द गर्नुहोस्' : 'Close Dropdown'}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCityDropdown(false)}
+                      className="text-amber-400 hover:text-amber-100 text-xs px-2 py-0.5 rounded-md bg-amber-950 border border-amber-800"
+                    >
+                      ✕ {lang === 'ne' ? 'बन्द' : 'Close'}
+                    </button>
+                  </div>
+
+                  {/* Category Filter Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setPlaceCategory('all')}
+                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition ${
+                        placeCategory === 'all'
+                          ? 'bg-amber-500 text-amber-950 font-bold shadow'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-900/60'
+                      }`}
+                    >
+                      {lang === 'ne' ? 'सबै (All)' : 'All'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlaceCategory('nepal')}
+                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition flex items-center gap-1 ${
+                        placeCategory === 'nepal'
+                          ? 'bg-amber-500 text-amber-950 font-bold shadow'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-900/60'
+                      }`}
+                    >
+                      <span>🇳🇵</span>
+                      <span>{lang === 'ne' ? 'नेपाल (७७ जिल्ला)' : 'Nepal (77 Districts)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlaceCategory('world')}
+                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition flex items-center gap-1 ${
+                        placeCategory === 'world'
+                          ? 'bg-amber-500 text-amber-950 font-bold shadow'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-900/60'
+                      }`}
+                    >
+                      <span>🌍</span>
+                      <span>{lang === 'ne' ? 'विश्वका देशहरू' : 'World Countries'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlaceCategory('india')}
+                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition flex items-center gap-1 ${
+                        placeCategory === 'india'
+                          ? 'bg-amber-500 text-amber-950 font-bold shadow'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-900/60'
+                      }`}
+                    >
+                      <span>🇮🇳</span>
+                      <span>{lang === 'ne' ? 'भारत' : 'India'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlaceCategory('gulf')}
+                      className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition flex items-center gap-1 ${
+                        placeCategory === 'gulf'
+                          ? 'bg-amber-500 text-amber-950 font-bold shadow'
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-900/60'
+                      }`}
+                    >
+                      <span>🏢</span>
+                      <span>{lang === 'ne' ? 'खाडी मुलुक' : 'Gulf'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtered list items */}
+                <div className="overflow-y-auto max-h-60 divide-y divide-amber-900/40 p-1">
+                  {filteredCities.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-amber-400/80">
+                      <p>{lang === 'ne' ? 'तपाईँले खोज्नुभएको स्थान फेला परेन।' : 'No matching location found.'}</p>
+                      <p className="text-[11px] text-amber-300/60 mt-1">
+                        {lang === 'ne' ? 'माथि सिधै आफ्नो स्थानको नाम र तल अक्षांश/देशान्तर लेख्न सक्नुहुन्छ।' : 'You can also type your custom place and set coordinates below.'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredCities.map((city, idx) => {
+                      const isNepal = city.countryNe === 'नेपाल' || city.category === 'nepal_district';
+                      const isIndia = city.category === 'india';
+                      const isGulf = city.category === 'gulf';
+                      const icon = isNepal ? '🇳🇵' : isIndia ? '🇮🇳' : isGulf ? '🏢' : '🌍';
+
+                      return (
+                        <button
+                          key={`${city.nameEn}_${idx}`}
+                          type="button"
+                          onClick={() => handleSelectCity(city)}
+                          className="w-full text-left px-3 py-2 text-xs text-amber-100 hover:bg-amber-800/40 transition-colors flex items-center justify-between gap-2 group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base shrink-0">{icon}</span>
+                            <div className="truncate">
+                              <div className="font-semibold text-amber-100 group-hover:text-amber-200 truncate">
+                                {city.nameNe}
+                              </div>
+                              <div className="text-[11px] text-amber-400/70 truncate">
+                                {city.nameEn}
+                                {city.provinceNe && ` • ${city.provinceNe}`}
+                                {!isNepal && ` • ${city.countryNe}`}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-300 border border-amber-700/60 block">
+                              UTC{city.tz >= 0 ? `+${city.tz}` : city.tz}
+                            </span>
+                            <span className="text-[10px] text-amber-400/60 font-mono mt-0.5 block">
+                              {city.lat.toFixed(1)}°, {city.lon.toFixed(1)}°
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Footer status */}
+                <div className="px-3 py-1.5 text-[10px] text-amber-400/80 bg-amber-950 border-t border-amber-900/60 flex items-center justify-between">
+                  <span>
+                    {lang === 'ne' ? `कुल उपलब्ध: ${filteredCities.length} स्थान` : `Available: ${filteredCities.length} locations`}
+                  </span>
+                  <span className="text-amber-300">
+                    {lang === 'ne' ? 'क्लिक गर्दा स्वतः अक्षांश, देशान्तर र समय क्षेत्र भरिनेछ' : 'Auto-fills Lat, Lon & Timezone'}
+                  </span>
                 </div>
               </div>
             )}
@@ -440,10 +586,10 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-amber-950 font-serif font-bold text-base py-3.5 px-6 rounded-xl shadow-xl hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-amber-950 font-serif font-bold text-base py-3.5 px-6 rounded-xl shadow-xl hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Sparkles className="w-5 h-5 text-amber-950" />
-          <span>{lang === 'ne' ? '१७ कुण्डली तथा सम्पूर्ण परम्परागत चिना निर्माण गर्नुहोस्' : 'Generate 17 Kundali & Traditional Cheena'}</span>
+          <span>{submitButtonText || (lang === 'ne' ? 'कुण्डली निर्माण गर्नुहोस्' : 'Generate Kundali')}</span>
         </button>
       </form>
     </div>

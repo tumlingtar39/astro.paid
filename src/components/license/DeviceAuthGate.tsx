@@ -20,7 +20,8 @@ import {
   ExternalLink,
   Gift,
   PhoneCall,
-  ArrowRight
+  ArrowRight,
+  ChevronDown
 } from 'lucide-react';
 import { DeviceAuthorizationResult, Language, LicenseRecord } from '../../types';
 import {
@@ -80,6 +81,7 @@ export const DeviceAuthGate: React.FC<Props> = ({
   const [deviceLicenses, setDeviceLicenses] = useState<LicenseRecord[]>([]);
   const [showMultiKeyModal, setShowMultiKeyModal] = useState(false);
   const [showActivateKeyModal, setShowActivateKeyModal] = useState(false);
+  const [showDeviceHubModal, setShowDeviceHubModal] = useState(false);
   const [manualKeyInput, setManualKeyInput] = useState('');
   const [manualKeyError, setManualKeyError] = useState<string | null>(null);
   const [isManualSubmitting, setIsManualSubmitting] = useState(false);
@@ -371,89 +373,33 @@ export const DeviceAuthGate: React.FC<Props> = ({
     <div className="relative min-h-screen">
       {/* Top Status Bar */}
       {isDeviceAuthorized ? (
-        /* Authorized Status Bar */
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/60 border-b border-amber-500/20 px-3 sm:px-6 py-1.5 text-xs text-slate-300 flex items-center justify-between shadow-sm z-30 relative">
+        /* Authorized Status Bar - Compact, Consolidated & Clean */
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/70 border-b border-amber-500/20 px-3 sm:px-6 py-1 text-xs text-slate-300 flex items-center justify-between shadow-xs z-30 relative backdrop-blur-xs">
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
-            </span>
-            <span className="hidden md:inline text-slate-400">|</span>
-            <span className="hidden md:inline font-mono text-amber-300/90 text-[11px]">
-              Key: {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
-            </span>
-            {authResult?.customerName && (
-              <span className="hidden sm:inline text-slate-300 text-[11px]">
-                ({authResult.customerName})
-              </span>
-            )}
-            {/* Active Tier Pill */}
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-semibold">
-              {expiryInfo.tier === 'vvip' ? <Crown className="w-3 h-3 text-purple-400" /> : expiryInfo.tier === 'vip' ? <Sparkles className="w-3 h-3 text-amber-400" /> : expiryInfo.tier === 'simple' ? <Zap className="w-3 h-3 text-emerald-400" /> : <Award className="w-3 h-3 text-blue-400" />}
-              {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-[11px] font-medium text-amber-200/90 font-serif truncate">
+              {isNepali ? 'ॐ श्री गणेशाय नमः | वैदिक ज्योतिष' : 'Om Sri Ganeshaya Namah | Vaidik Jyotish'}
             </span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Multi-Key Device Pill if customer has multiple registered keys on this device */}
-            {deviceLicenses.length > 1 && (
-              <button
-                onClick={() => setShowMultiKeyModal(true)}
-                className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer"
-                title={isNepali ? 'यस यन्त्रमा उपलब्ध Key हरू' : 'Available Keys on this Device'}
-              >
-                <KeyRound className="w-3 h-3 text-amber-400" />
-                <span>
-                  {isNepali ? `${deviceLicenses.length} वटा Key` : `${deviceLicenses.length} Keys`}
-                </span>
-              </button>
-            )}
-
-            {/* Change / Add Code Button */}
+            {/* Unified Hub Button - Consolidates Trusted Device, Key, Plan, and Admin controls */}
             <button
-              onClick={() => setShowActivateKeyModal(true)}
-              className="px-2 py-1 rounded-md text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition cursor-pointer"
-              title={isNepali ? 'नयाँ Key हाल्नुहोस्' : 'Enter another key'}
+              onClick={() => setShowDeviceHubModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-950/90 via-slate-900 to-amber-950/80 hover:from-emerald-900 hover:to-amber-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
+              title={isNepali ? 'सुरक्षित उपकरण एवं इजाजतपत्र केन्द्र' : 'Trusted Device & License Hub'}
             >
-              <KeyRound className="w-3 h-3 text-amber-400" />
-              <span className="hidden sm:inline">{isNepali ? 'Key बदल्नुहोस्' : 'Switch Key'}</span>
-            </button>
-
-            {/* Admin Panel Button */}
-            {isAdmin && (
-              <button
-                onClick={() => setIsAdminOpen(true)}
-                className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 border shadow-sm transition cursor-pointer bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 border-amber-300"
-                title={isNepali ? 'इजाजतपत्र व्यवस्थापन (Admin)' : 'Admin License Manager'}
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>{isNepali ? 'व्यवस्थापन (Admin)' : 'Admin'}</span>
-              </button>
-            )}
-
-            {/* User Account / Switcher Pill */}
-            <button
-              onClick={openAuthModal}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1.5 border transition shadow-sm cursor-pointer ${
-                isAdmin
-                  ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/80'
-                  : 'bg-slate-800/90 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
-              title={
-                currentUser
-                  ? `Active: ${currentUser.customerName || currentUser.displayName || currentUser.email || 'Customer'}`
-                  : 'Sign in / Switch Account'
-              }
-            >
-              <User className="w-3 h-3 text-amber-400" />
-              <span className="max-w-[120px] sm:max-w-[170px] truncate">
-                {currentUser
-                  ? (currentUser.customerName || currentUser.displayName || currentUser.email)
-                  : (isNepali ? 'ग्राहक विवरण' : 'Customer Profile')}
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="font-bold">
+                {isNepali ? 'सुरक्षित उपकरण' : 'Trusted Device'}
               </span>
-              {isAdmin && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              )}
+              <span className="text-slate-500">•</span>
+              <span className="font-mono text-amber-300 text-[10px]">
+                {isSecretMasterKey(authResult?.licenseKey || activeKey || '')
+                  ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)')
+                  : (authResult?.licenseKey || activeKey || '').slice(0, 10)}
+              </span>
+              <ChevronDown className="w-3 h-3 text-emerald-400/80 shrink-0 ml-0.5" />
             </button>
           </div>
         </div>
@@ -523,6 +469,167 @@ export const DeviceAuthGate: React.FC<Props> = ({
           <span className="text-[11px] font-mono text-amber-300/80 shrink-0">
             {isNepali ? `अन्तिम मिति: ${expiryInfo.formattedExpiryNe}` : `Exp: ${expiryInfo.formattedExpiryEn}`}
           </span>
+        </div>
+      )}
+
+      {/* Consolidated Device & License Hub Modal */}
+      {showDeviceHubModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-amber-500/40 rounded-3xl max-w-md w-full p-5 text-slate-100 shadow-2xl space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-amber-200">
+                    {isNepali ? 'सुरक्षित उपकरण केन्द्र (Device Hub)' : 'Trusted Device Hub'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {isNepali ? 'इजाजतपत्र, Key तथा उपकरण व्यवस्थापन' : 'License, Key & Device Controls'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDeviceHubModal(false)}
+                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Status Summary Card */}
+            <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">{isNepali ? 'उपकरण स्थिति:' : 'Device Status:'}</span>
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {isNepali ? 'सुरक्षित उपकरण (Trusted Device)' : 'Trusted Device Authorized'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">{isNepali ? 'सक्रिय Key:' : 'Active Key:'}</span>
+                <span className="font-mono text-xs font-bold text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  {isSecretMasterKey(authResult?.licenseKey || activeKey || '') ? (isNepali ? 'मास्टर (Admin)' : 'MASTER (Admin)') : (authResult?.licenseKey || activeKey)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">{isNepali ? 'योजना (Tier):' : 'Plan (Tier):'}</span>
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
+                  {expiryInfo.tier === 'vvip' ? <Crown className="w-3.5 h-3.5 text-purple-400" /> : <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  {isNepali ? expiryInfo.tierNameNe : expiryInfo.tierNameEn}
+                  <span className="text-slate-400 text-[10px]">
+                    ({expiryInfo.isLifetime ? (isNepali ? 'आजन्म (Lifetime Plan)' : 'Lifetime Plan') : (isNepali ? `${expiryInfo.daysRemaining ?? 0} दिन बाँकी` : `${expiryInfo.daysRemaining ?? 0} days left`)})
+                  </span>
+                </span>
+              </div>
+
+              {authResult?.customerName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">{isNepali ? 'ग्राहक विवरण:' : 'Customer:'}</span>
+                  <span className="text-xs font-semibold text-slate-200">
+                    {authResult.customerName}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Consolidated Actions List */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                {isNepali ? 'मुख्य कार्यहरू (Quick Actions)' : 'Quick Actions'}
+              </p>
+
+              {/* Key Switch Button */}
+              <button
+                onClick={() => {
+                  setShowDeviceHubModal(false);
+                  setShowActivateKeyModal(true);
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold">{isNepali ? 'Key बदल्नुहोस्' : 'Switch / Add Key'}</div>
+                    <div className="text-[10px] text-slate-400">{isNepali ? 'नयाँ इजाजतपत्र कोड हाल्नुहोस्' : 'Enter a new license key'}</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {/* Admin Panel Button (if admin) */}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setShowDeviceHubModal(false);
+                    setIsAdminOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-200 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-bold">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-black text-amber-300">{isNepali ? 'व्यवस्थापन (Admin)' : 'Admin License Manager'}</div>
+                      <div className="text-[10px] text-amber-400/80">{isNepali ? 'सम्पूर्ण ग्राहक र कुञ्जी व्यवस्थापन गर्नुहोस्' : 'Manage keys and customers'}</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-amber-300" />
+                </button>
+              )}
+
+              {/* Multi-Key Button if multiple keys exist on this device */}
+              {deviceLicenses.length > 1 && (
+                <button
+                  onClick={() => {
+                    setShowDeviceHubModal(false);
+                    setShowMultiKeyModal(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-bold">{isNepali ? `यस यन्त्रका सबै Key हरू (${deviceLicenses.length})` : `All Device Keys (${deviceLicenses.length})`}</div>
+                      <div className="text-[10px] text-slate-400">{isNepali ? 'यस यन्त्रमा दर्ता भएका कोडहरू हेर्नुहोस्' : 'View registered keys'}</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+
+              {/* Customer Account Button */}
+              <button
+                onClick={() => {
+                  setShowDeviceHubModal(false);
+                  openAuthModal();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold">{isNepali ? 'ग्राहक विवरण एवं प्रोफाइल' : 'Customer Account & Profile'}</div>
+                    <div className="text-[10px] text-slate-400">
+                      {currentUser ? (currentUser.customerName || currentUser.displayName || currentUser.email) : (isNepali ? 'खाता हेर्नुहोस् वा लगइन गर्नुहोस्' : 'View account or login')}
+                    </div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

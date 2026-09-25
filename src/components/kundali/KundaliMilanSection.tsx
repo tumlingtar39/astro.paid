@@ -15,7 +15,7 @@ import {
   matchKundalis,
   NAKSHATRA_AVAKHADA_TABLE
 } from '../../utils/milanEngine';
-import { CITY_PRESETS } from '../../utils/cityPresets';
+import { CITY_PRESETS, NEPAL_77_DISTRICTS, WORLD_COUNTRIES } from '../../utils/cityPresets';
 import {
   Heart,
   Sparkles,
@@ -383,11 +383,34 @@ ${milanResult.remediesNe.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   }}
                   className="w-full bg-black/80 border border-blue-500/40 rounded-xl px-3 py-2 text-sm text-blue-100"
                 >
-                  {CITY_PRESETS.map((c) => (
-                    <option key={c.nameEn} value={c.nameNe}>
-                      {c.nameNe}
-                    </option>
-                  ))}
+                  <optgroup label="🇳🇵 नेपालका ७७ वटै जिल्लाहरू (All 77 Districts of Nepal)">
+                    {NEPAL_77_DISTRICTS.map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🇳🇵 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🇮🇳 भारतका प्रमुख तीर्थ तथा नगरहरू (India)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'india').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🇮🇳 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🏢 खाडी तथा मध्यपूर्व (Gulf & Middle East)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'gulf').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🏢 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🌍 विश्वका प्रमुख देशहरू (All World Countries)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'world_country').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🌍 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
             </div>
@@ -535,11 +558,34 @@ ${milanResult.remediesNe.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   }}
                   className="w-full bg-black/80 border border-rose-500/40 rounded-xl px-3 py-2 text-sm text-rose-100"
                 >
-                  {CITY_PRESETS.map((c) => (
-                    <option key={c.nameEn} value={c.nameNe}>
-                      {c.nameNe}
-                    </option>
-                  ))}
+                  <optgroup label="🇳🇵 नेपालका ७७ वटै जिल्लाहरू (All 77 Districts of Nepal)">
+                    {NEPAL_77_DISTRICTS.map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🇳🇵 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🇮🇳 भारतका प्रमुख तीर्थ तथा नगरहरू (India)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'india').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🇮🇳 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🏢 खाडी तथा मध्यपूर्व (Gulf & Middle East)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'gulf').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🏢 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🌍 विश्वका प्रमुख देशहरू (All World Countries)">
+                    {WORLD_COUNTRIES.filter((c) => c.category === 'world_country').map((c) => (
+                      <option key={c.nameEn} value={c.nameNe}>
+                        🌍 {c.nameNe}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
             </div>

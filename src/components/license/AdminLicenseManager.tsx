@@ -1813,6 +1813,45 @@ export const AdminLicenseManager: React.FC<Props> = ({
                             </>
                           )}
                         </div>
+
+                        {/* First Device Activation & Binding Info (कुन कोड, कुन डिभाइस, कुन मिति/समयमा हालियो) */}
+                        {lic.authorizedDeviceId ? (
+                          <div className="mt-1.5 p-2 rounded-lg bg-slate-900/90 border border-slate-700/60 text-[11px] space-y-1">
+                            <div className="flex items-center gap-1.5 text-cyan-300 font-medium flex-wrap">
+                              <Smartphone className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span>{isNepali ? 'पहिलो पटक हालिएको डिभाइस (Device ID):' : 'Activated Device ID:'}</span>
+                              <span className="font-mono text-cyan-200 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-800/50 break-all select-all font-semibold">
+                                {lic.authorizedDeviceId}
+                              </span>
+                            </div>
+                            {lic.activatedAt ? (
+                              <div className="flex items-center gap-1.5 text-amber-200 flex-wrap">
+                                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span>{isNepali ? 'पहिलो पटक हालिएको मिति र समय:' : 'First Activated Date & Time:'}</span>
+                                <strong className="text-amber-300 font-mono">
+                                  {new Date(lic.activatedAt).toLocaleString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true
+                                  })}
+                                </strong>
+                              </div>
+                            ) : (
+                              <div className="text-slate-400 text-[10px]">
+                                {isNepali ? 'डिभाइस बाँधिएको छ तर सक्रियता मिति दर्ता भएको छैन।' : 'Device bound without timestamp.'}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-[11px] text-emerald-400/90 flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-800/40 rounded-md px-2 py-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>{isNepali ? 'अहिलेसम्म कुनै पनि डिभाइसमा हालिएको छैन (अप्रयुक्त - नयाँ कोड)' : 'Not yet entered on any device (Fresh Unused Key)'}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action buttons with clear, easy Delete */}

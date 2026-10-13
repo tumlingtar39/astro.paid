@@ -27,7 +27,7 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
   initialValues,
   submitButtonText,
 }) => {
-  const [name, setName] = useState(initialValues?.name || 'रामप्रसाद शर्मा (Ram Sharma)');
+  const [name, setName] = useState(initialValues?.name || '');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialValues?.gender || 'male');
   
   // Date Calendar Mode: BS (Bikram Sambat) or AD (Gregorian)
@@ -155,7 +155,7 @@ export const BirthDetailsForm: React.FC<BirthDetailsFormProps> = ({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Ram Prasad Sharma"
+              placeholder={lang === 'ne' ? 'पूरा नाम प्रविष्टि गर्नुहोस्...' : 'Enter full name...'}
               className="w-full bg-amber-950/60 border border-amber-700/70 rounded-xl px-3.5 py-2.5 text-sm text-amber-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
             />
           </div>

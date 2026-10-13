@@ -307,8 +307,8 @@ export const KundaliDashboard: React.FC<KundaliDashboardProps> = ({
                   <Sparkles className="w-5 h-5 text-amber-400" />
                   <span>
                     {lang === 'ne'
-                      ? 'निःशुल्क ३ कुण्डली (१. जन्म लग्न, २. चन्द्र कुण्डली, ३. नवमांश)'
-                      : '3 Free Charts (1. Lagna, 2. Moon Chart, 3. Navamsha)'}
+                      ? 'मुख्य कुण्डली (१. जन्म लग्न, २. चन्द्र कुण्डली, ३. नवमांश)'
+                      : 'Core Kundali (1. Lagna, 2. Moon Chart, 3. Navamsha)'}
                   </span>
                 </h3>
                 <p className="text-xs text-amber-300/80 mt-0.5">

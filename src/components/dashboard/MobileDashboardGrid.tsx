@@ -104,8 +104,8 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
   const handleShareApp = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'वैदिक ज्योतिष तथा चिना फलादेश',
-        text: 'पण्डित शम्भु प्रसाद लम्साल (Binay Guru) द्वारा तयार गरिएको सम्पूर्ण वैदिक कुण्डली, चिना प्रिन्ट तथा फलादेश एप।',
+        title: lang === 'ne' ? 'वैदिक ज्योतिष गुरु' : 'Baidik Jyotish Guru',
+        text: 'वैदिक ज्योतिष गुरु (Baidik Jyotish Guru) - सम्पूर्ण वैदिक कुण्डली, दशा, पञ्चाङ्ग, राशिफल तथा फलादेश।',
         url: window.location.href,
       }).catch(() => {});
     } else {
@@ -147,38 +147,38 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
             onClick={() => onSelectTab('kundali')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'kundali'
-                ? 'bg-amber-100/90 dark:bg-amber-950/70 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95'
+                ? 'bg-amber-500/20 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30'
+                : 'bg-gradient-to-b from-amber-950/70 via-stone-900/90 to-amber-950/80 border border-amber-700/50 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95'
             }`}
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-amber-100 to-amber-200/80 dark:from-amber-900/60 dark:to-amber-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-800/40 border border-amber-600/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📜</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-amber-100 leading-tight">
               {lang === 'ne' ? 'कुण्डली' : 'Kundali'}
             </span>
-            <span className="text-[9px] text-amber-700 dark:text-amber-400 font-medium mt-0.5 hidden sm:block">
+            <span className="text-[9px] text-amber-300/80 font-medium mt-0.5 hidden sm:block">
               {lang === 'ne' ? 'निःशुल्क' : 'Free'}
             </span>
           </button>
 
-          {/* 2. Kundali Milan */}
+          {/* 2. Dasha (दशा - विंशोत्तरी, त्रिभागी, योगिनी) right next to Kundali */}
           <button
-            onClick={() => onSelectTab('milan')}
+            onClick={() => onSelectTab('dasha')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
-              activeTab === 'milan'
-                ? 'bg-rose-100/90 dark:bg-rose-950/70 border-2 border-rose-500 shadow-md ring-2 ring-rose-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-rose-300 active:scale-95'
+              activeTab === 'dasha'
+                ? 'bg-amber-500/20 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30'
+                : 'bg-gradient-to-b from-amber-950/70 via-stone-900/90 to-amber-950/80 border border-amber-700/50 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95'
             }`}
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-rose-100 to-rose-200/80 dark:from-rose-900/60 dark:to-rose-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <span className="text-xl sm:text-2xl">👩‍❤️‍👨</span>
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-800/40 border border-amber-600/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <span className="text-xl sm:text-2xl">⏳</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
-              {lang === 'ne' ? 'कुण्डली मिलान' : 'Milan'}
+            <span className="text-[11px] sm:text-xs font-bold text-amber-100 leading-tight">
+              {lang === 'ne' ? 'दशा' : 'Dasha'}
             </span>
-            <span className="text-[9px] text-rose-600 dark:text-rose-400 font-medium mt-0.5 hidden sm:block">
-              {lang === 'ne' ? '३६ गुण' : '36 Gunas'}
+            <span className="text-[8px] sm:text-[9px] text-amber-300/90 font-medium mt-0.5 leading-tight">
+              {lang === 'ne' ? 'विंशोत्तरी/त्रिभागी' : 'Vimshottari/Yogini'}
             </span>
           </button>
 
@@ -187,126 +187,126 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
             onClick={() => onSelectTab('china17')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'china17'
-                ? 'bg-amber-100/90 dark:bg-amber-950/70 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95'
+                ? 'bg-amber-500/20 border-2 border-amber-500 shadow-md ring-2 ring-amber-400/30'
+                : 'bg-gradient-to-b from-amber-950/70 via-stone-900/90 to-amber-950/80 border border-amber-700/50 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95'
             }`}
           >
             <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-xs">
               👑 PRO
             </span>
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-amber-100 to-amber-200/80 dark:from-amber-900/60 dark:to-amber-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-800/40 border border-amber-600/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📜</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-amber-100 leading-tight">
               {lang === 'ne' ? 'पूरा चिना' : 'Full Cheena'}
             </span>
-            <span className="text-[8px] sm:text-[9.5px] text-amber-700 dark:text-amber-400 font-semibold mt-0.5 leading-[1.15] text-center px-0.5">
+            <span className="text-[8px] sm:text-[9.5px] text-amber-300 font-semibold mt-0.5 leading-[1.15] text-center px-0.5">
               {lang === 'ne' ? '१७ कुण्डली सहितको चिना' : 'With 17 Kundali'}
             </span>
           </button>
 
-          {/* 4. Panchang & Rashifal */}
+          {/* 4. Kundali Milan */}
+          <button
+            onClick={() => onSelectTab('milan')}
+            className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
+              activeTab === 'milan'
+                ? 'bg-rose-950/80 border-2 border-rose-500 shadow-md ring-2 ring-rose-400/30'
+                : 'bg-gradient-to-b from-stone-950/80 via-stone-900/90 to-rose-950/40 border border-rose-800/40 shadow-md hover:border-rose-400 active:scale-95'
+            }`}
+          >
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-rose-900/50 to-rose-800/30 border border-rose-700/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <span className="text-xl sm:text-2xl">👩‍❤️‍👨</span>
+            </div>
+            <span className="text-[11px] sm:text-xs font-bold text-stone-100 leading-tight">
+              {lang === 'ne' ? 'कुण्डली मिलान' : 'Milan'}
+            </span>
+            <span className="text-[9px] text-rose-300 font-medium mt-0.5 hidden sm:block">
+              {lang === 'ne' ? '३६ गुण' : '36 Gunas'}
+            </span>
+          </button>
+
+          {/* 5. Panchang & Rashifal */}
           <button
             onClick={() => onSelectTab('rashifal')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'rashifal'
-                ? 'bg-sky-100/90 dark:bg-sky-950/70 border-2 border-sky-500 shadow-md ring-2 ring-sky-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-sky-300 active:scale-95'
+                ? 'bg-sky-950/80 border-2 border-sky-500 shadow-md ring-2 ring-sky-400/30'
+                : 'bg-gradient-to-b from-stone-950/80 via-stone-900/90 to-sky-950/40 border border-sky-800/40 shadow-md hover:border-sky-400 active:scale-95'
             }`}
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-sky-100 to-sky-200/80 dark:from-sky-900/60 dark:to-sky-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-sky-900/50 to-sky-800/30 border border-sky-700/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">🗓️</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
-              {lang === 'ne' ? 'पञ्चाङ्ग' : 'Panchang'}
+            <span className="text-[10px] sm:text-xs font-bold text-stone-100 leading-tight">
+              {lang === 'ne' ? 'पञ्चाङ्ग र राशिफल' : 'Panchang & Rashifal'}
             </span>
-            <span className="text-[9px] text-sky-600 dark:text-sky-400 font-medium mt-0.5 hidden sm:block">
-              {lang === 'ne' ? 'राशिफल' : 'Horoscope'}
+            <span className="text-[8.5px] sm:text-[9.5px] text-sky-300 font-medium mt-0.5 leading-tight">
+              {lang === 'ne' ? 'मुहूर्त / साईत' : 'Muhurat & Sait'}
             </span>
           </button>
 
-          {/* 5. China Phalit (Predictions) */}
+          {/* 6. China Phalit (Predictions) */}
           <button
             onClick={() => onSelectTab('phalit')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'phalit'
-                ? 'bg-orange-100/90 dark:bg-orange-950/70 border-2 border-orange-500 shadow-md ring-2 ring-orange-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-orange-300 active:scale-95'
+                ? 'bg-orange-950/80 border-2 border-orange-500 shadow-md ring-2 ring-orange-400/30'
+                : 'bg-gradient-to-b from-amber-950/70 via-stone-900/90 to-orange-950/40 border border-orange-800/40 shadow-md hover:border-orange-400 active:scale-95'
             }`}
           >
             <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-xs">
               👑 PRO
             </span>
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-orange-100 to-orange-200/80 dark:from-orange-900/60 dark:to-orange-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-orange-900/50 to-orange-800/30 border border-orange-700/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📖</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-stone-100 leading-tight">
               {lang === 'ne' ? 'चिना फलित' : 'Predictions'}
             </span>
-            <span className="text-[9px] text-orange-600 dark:text-orange-400 font-medium mt-0.5 hidden sm:block">
+            <span className="text-[9px] text-orange-300 font-medium mt-0.5 hidden sm:block">
               {lang === 'ne' ? 'वार्षिक फलादेश' : 'Yearly'}
             </span>
           </button>
 
-          {/* 6. Numerology (अंकशास्त्र) */}
+          {/* 7. Numerology (अंकशास्त्र) */}
           <button
             onClick={() => onSelectTab('numerology')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'numerology'
-                ? 'bg-indigo-100/90 dark:bg-indigo-950/70 border-2 border-indigo-500 shadow-md ring-2 ring-indigo-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-indigo-300 active:scale-95'
+                ? 'bg-indigo-950/80 border-2 border-indigo-500 shadow-md ring-2 ring-indigo-400/30'
+                : 'bg-gradient-to-b from-stone-950/80 via-stone-900/90 to-indigo-950/40 border border-indigo-800/40 shadow-md hover:border-indigo-400 active:scale-95'
             }`}
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200/80 dark:from-indigo-900/60 dark:to-indigo-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <span className="text-xl sm:text-2xl font-mono font-bold text-indigo-700 dark:text-indigo-300">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-indigo-900/50 to-indigo-800/30 border border-indigo-700/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <span className="text-xl sm:text-2xl font-mono font-bold text-indigo-300">
                 🔢
               </span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-stone-100 leading-tight">
               {lang === 'ne' ? 'अंकशास्त्र' : 'Numerology'}
             </span>
-            <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5 hidden sm:block">
+            <span className="text-[9px] text-indigo-300 font-medium mt-0.5 hidden sm:block">
               {lang === 'ne' ? 'मूलांक / भाग्यांक' : 'Life Path'}
             </span>
           </button>
 
-          {/* 7. Vastu Shastra */}
+          {/* 8. Vastu Shastra */}
           <button
             onClick={() => onSelectTab('vastu')}
             className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
               activeTab === 'vastu'
-                ? 'bg-emerald-100/90 dark:bg-emerald-950/70 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-emerald-300 active:scale-95'
+                ? 'bg-emerald-950/80 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-400/30'
+                : 'bg-gradient-to-b from-stone-950/80 via-stone-900/90 to-emerald-950/40 border border-emerald-800/40 shadow-md hover:border-emerald-400 active:scale-95'
             }`}
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200/80 dark:from-emerald-900/60 dark:to-emerald-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border border-emerald-700/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">🧭</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-stone-100 leading-tight">
               {lang === 'ne' ? 'वास्तु' : 'Vastu'}
             </span>
-            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 hidden sm:block">
+            <span className="text-[9px] text-emerald-300 font-medium mt-0.5 hidden sm:block">
               {lang === 'ne' ? 'गृह दोष निवारण' : 'Remedies'}
-            </span>
-          </button>
-
-          {/* 8. Binay Guru AI Assistant */}
-          <button
-            onClick={() => onSelectTab('assistant')}
-            className={`group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl transition-all duration-200 text-center relative aspect-[1/1.08] sm:aspect-square ${
-              activeTab === 'assistant'
-                ? 'bg-purple-100/90 dark:bg-purple-950/70 border-2 border-purple-500 shadow-md ring-2 ring-purple-400/30'
-                : 'bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-purple-300 active:scale-95'
-            }`}
-          >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-br from-purple-100 to-purple-200/80 dark:from-purple-900/60 dark:to-purple-800/40 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <span className="text-xl sm:text-2xl">✨</span>
-            </div>
-            <span className="text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-100 leading-tight">
-              {lang === 'ne' ? 'AI गुरु' : 'AI Guru'}
-            </span>
-            <span className="text-[9px] text-purple-600 dark:text-purple-400 font-medium mt-0.5 hidden sm:block">
-              {lang === 'ne' ? 'प्रत्यक्ष परामर्श' : 'Live Chat'}
             </span>
           </button>
         </div>
@@ -329,12 +329,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Sankalpa */}
           <button
             onClick={() => setActiveModal('sankalpa')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📿</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'संकल्प' : 'Sankalpa'}
             </span>
           </button>
@@ -342,12 +342,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Mantra */}
           <button
             onClick={() => setActiveModal('mantra')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform text-red-600 dark:text-red-400 font-serif font-bold text-xl sm:text-2xl">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-red-950/60 border border-red-700/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform text-red-400 font-serif font-bold text-xl sm:text-2xl">
               ॐ
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'मन्त्र' : 'Mantra'}
             </span>
           </button>
@@ -355,12 +355,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Name Rashi Chart */}
           <button
             onClick={() => setActiveModal('rashi')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">♈</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'नाम राशि चार्ट' : 'Name Rashi'}
             </span>
           </button>
@@ -368,12 +368,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Gotra Pravara */}
           <button
             onClick={() => setActiveModal('gotra')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-cyan-50 dark:bg-cyan-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-cyan-950/60 border border-cyan-700/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">🌳</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'गोत्र' : 'Gotra'}
             </span>
           </button>
@@ -381,12 +381,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Shubh Muhurat */}
           <button
             onClick={() => setActiveModal('muhurat')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">⏰</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'मुहूर्त' : 'Muhurat'}
             </span>
           </button>
@@ -394,12 +394,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Visiting Card */}
           <button
             onClick={onOpenVisitingCard}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📇</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'भिजिटिङ कार्ड' : 'Card'}
             </span>
           </button>
@@ -407,12 +407,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Contact Guru directly */}
           <button
             onClick={() => setActiveModal('contact')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-emerald-950/60 border border-emerald-700/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">📞</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'सम्पर्क' : 'Contact'}
             </span>
           </button>
@@ -420,12 +420,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Share App */}
           <button
             onClick={handleShareApp}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-orange-50 dark:bg-orange-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {copiedShare ? (lang === 'ne' ? 'लिङ्क कपि!' : 'Copied!') : (lang === 'ne' ? 'एप सेयर' : 'Share App')}
             </span>
           </button>
@@ -452,12 +452,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
               if (onOpenSubscriptionModal) onOpenSubscriptionModal();
               else openSubscriptionModal();
             }}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">👑</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'प्लान / सदस्यता' : 'Plan'}
             </span>
           </button>
@@ -465,15 +465,15 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* App Settings & Vision Accessibility (अक्षर आकार तथा दृष्टि सुलभता) */}
           <button
             onClick={openSettings}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square cursor-pointer"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square cursor-pointer"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'एप सेटिङ' : 'Settings'}
             </span>
-            <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 hidden sm:block">
+            <span className="text-[9px] text-amber-400 font-medium mt-0.5 hidden sm:block">
               {lang === 'ne' ? 'अक्षर आकार' : 'Zoom'}
             </span>
           </button>
@@ -481,16 +481,16 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Theme Toggle (Dark / Light) */}
           <button
             onClick={toggleTheme}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               {isDark ? (
-                <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 fill-amber-500" />
+                <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400" />
               ) : (
-                <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 fill-indigo-600" />
+                <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 fill-amber-300" />
               )}
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {isDark ? (lang === 'ne' ? 'लाइट मोड' : 'Light') : (lang === 'ne' ? 'डार्क मोड' : 'Dark')}
             </span>
           </button>
@@ -498,12 +498,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Language Switcher */}
           <button
             onClick={() => setLang(lang === 'ne' ? 'en' : 'ne')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-sky-50 dark:bg-sky-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-sky-600 dark:text-sky-400" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'English' : 'नेपाली'}
             </span>
           </button>
@@ -514,16 +514,16 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
               if (onOpenAuthModal) onOpenAuthModal();
               else openAuthModal();
             }}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               {isAdmin ? (
-                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400" />
+                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
               ) : (
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400" />
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
               )}
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {isAdmin ? 'एडमिन' : (lang === 'ne' ? 'ग्राहक' : 'Profile')}
             </span>
           </button>
@@ -531,12 +531,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Privacy Policy */}
           <button
             onClick={() => setActiveModal('privacy')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
               <span className="text-xl sm:text-2xl">⚠️</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'गोपनीयता नीति' : 'Privacy'}
             </span>
           </button>
@@ -544,12 +544,12 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
           {/* Terms and Conditions */}
           <button
             onClick={() => setActiveModal('terms')}
-            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-amber-300 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
+            className="group flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-900/90 to-amber-950/60 border border-amber-800/40 shadow-md hover:shadow-amber-900/30 hover:border-amber-400 active:scale-95 transition-all text-center aspect-[1/1.08] sm:aspect-square"
           >
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-stone-600 dark:text-stone-300" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-1 shadow-xs group-hover:scale-105 transition-transform">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
             </div>
-            <span className="text-[11px] sm:text-xs font-semibold text-stone-800 dark:text-stone-200 leading-tight">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-100 leading-tight">
               {lang === 'ne' ? 'नियम र सर्त' : 'Terms'}
             </span>
           </button>
@@ -878,7 +878,7 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
               <div className="p-3 bg-amber-50 dark:bg-stone-800/80 rounded-2xl border border-amber-200 dark:border-stone-700 space-y-1">
                 <span className="font-bold text-amber-900 dark:text-amber-300 block">३. पञ्चाङ्ग र राशिफल खण्ड:</span>
                 <p className="text-stone-700 dark:text-stone-300">
-                  विस्तृत दैनिक चौघडिया, होरा तथा नक्षत्र साइतका लागि हाम्रो 'पञ्चाङ्ग' खण्ड हेर्नुहोस्।
+                  विस्तृत दैनिक चौघडिया, मुहूर्त तथा शुभ साईतका लागि हाम्रो 'पञ्चाङ्ग र राशिफल' खण्ड हेर्नुहोस्।
                 </p>
                 <button
                   onClick={() => {
@@ -887,7 +887,7 @@ export const MobileDashboardGrid: React.FC<MobileDashboardGridProps> = ({
                   }}
                   className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-400 underline"
                 >
-                  👉 पञ्चाङ्ग खण्डमा जानुहोस्
+                  👉 पञ्चाङ्ग र राशिफल खण्डमा जानुहोस्
                 </button>
               </div>
             </div>

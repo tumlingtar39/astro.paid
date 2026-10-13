@@ -451,7 +451,7 @@ export const TraditionalCheenaView: React.FC<TraditionalCheenaViewProps> = ({
 
   const shakaYear = p?.shakaSamvat || (p?.shakaYear ? toNepaliDigits(p.shakaYear) : '१९१७');
   const vikramSamvat = p?.vikramSamvat || (p?.vikramYear ? toNepaliDigits(p.vikramYear) : (result.bsBirthDate ? toNepaliDigits(result.bsBirthDate) : '२०५२'));
-  const samvatsarName = p?.samvatsaraNe || 'सर्वधारी';
+  const samvatsarName = p?.samvatsaraNe || 'रौद्र';
   const ayanaName = p?.ayanaNe || 'उत्तरायण';
   const rituName = p?.rituNe || 'ग्रीष्म';
   const chandraMonthName = p?.chandraMasaNe || p?.solarMasaNe || p?.bsMonthName || 'ज्येष्ठ';

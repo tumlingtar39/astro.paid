@@ -44,6 +44,7 @@ import {
   Compass,
   X,
   MapPin,
+  LayoutGrid,
   ArrowRight
 } from 'lucide-react';
 import { fetchUserKundalisFromCloud } from '../lib/firestoreService';
@@ -68,7 +69,18 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [selectedBhavaNum, setSelectedBhavaNum] = useState<number | null>(null);
+  const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
+  const [countrySearchQuery, setCountrySearchQuery] = useState<string>('');
+  const [countryContinentFilter, setCountryContinentFilter] = useState<string>('all');
   const { isSubscribed, hasAccessToPhalit, openSubscriptionModal } = useSubscription();
+
+  // Scroll to top smoothly when any phalit is tapped so native reads without menus covering
+  useEffect(() => {
+    if (selectedTopicId !== null || selectedCountryId !== null || selectedBhavaNum !== null) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [selectedTopicId, selectedCountryId, selectedBhavaNum]);
 
   // Active Kundali state
   const [activeKundali, setActiveKundali] = useState<KundaliResult | null>(initialKundali || null);
@@ -87,16 +99,8 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
     }
   }, [initialKundali, initialInput]);
 
-  // AI Custom Question state for this year
-  const [customQuestion, setCustomQuestion] = useState<string>('');
-  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
-  const [activeTabMode, setActiveTabMode] = useState<'topics' | 'foreign' | 'bhavas' | 'dasha' | 'ai'>('topics');
-
-  // Interactive World Country Search and Selection State
-  const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
-  const [countrySearchQuery, setCountrySearchQuery] = useState<string>('');
-  const [countryContinentFilter, setCountryContinentFilter] = useState<string>('all');
+  // Sub-menu Tab Mode inside Phalit
+  const [activeTabMode, setActiveTabMode] = useState<'topics' | 'foreign' | 'bhavas' | 'dasha'>('topics');
 
   // Load active session or saved kundalis on mount
   useEffect(() => {
@@ -178,54 +182,6 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
     } catch (_) {}
   };
 
-  // Handle AI Consultation Submit
-  const handleAskAI = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customQuestion.trim() || !activeKundali || !prediction) return;
-
-    setIsAiLoading(true);
-    setAiAnswer(null);
-
-    try {
-      const response = await fetch('/api/yearly-phalit-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: activeKundali.name,
-          birthDate: activeKundali.birthDate,
-          birthPlace: activeKundali.birthPlace,
-          targetYear: prediction.yearAD,
-          targetYearBS: prediction.yearBS,
-          question: customQuestion,
-          dashaSummary: prediction.dashaInfo.periodSummaryNe,
-          lagna: activeKundali.lagna,
-          rashi: activeKundali.rashi,
-          language: lang
-        })
-      });
-
-      const data = await response.json();
-      if (data.reply) {
-        setAiAnswer(data.reply);
-      } else {
-        setAiAnswer(
-          lang === 'ne'
-            ? 'ज्योतिषीय विश्लेषण प्राप्त भयो। वर्ष ' + prediction.yearAD + ' मा ग्रहगोचर तपाईँको अनुकूल रहनेछ।'
-            : `Astrological consultation completed. Year ${prediction.yearAD} aligns favorably.`
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      setAiAnswer(
-        lang === 'ne'
-          ? 'परामर्श सेवामा केही ढिलाइ भयो। कृपया पुनः प्रश्न सोध्नुहोस्।'
-          : 'Consultation service delayed. Please try again.'
-      );
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   // Filter Categories
   const categories = [
     { id: 'all', labelNe: '🌟 सबै ३० विषयहरू', labelEn: '🌟 All 30 Topics' },
@@ -259,6 +215,17 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
       return matchCat && matchQuery;
     });
   }, [prediction, selectedCategory, searchQuery]);
+
+  // Active selected topic for single-focus mode (null when browsing all grid)
+  const activeTopic = useMemo(() => {
+    if (filteredTopics.length === 0 || !selectedTopicId) return null;
+    return filteredTopics.find((t) => t.id === selectedTopicId) || null;
+  }, [filteredTopics, selectedTopicId]);
+
+  const activeIndex = useMemo(() => {
+    if (!activeTopic) return -1;
+    return filteredTopics.findIndex((t) => t.id === activeTopic.id);
+  }, [filteredTopics, activeTopic]);
 
   // If no Kundali has been entered/generated yet, show the birth details form screen
   if (!activeKundali || !prediction) {
@@ -337,6 +304,426 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
     currentRealYear + 5,
     currentRealYear + 10
   ];
+
+  // Check if user has tapped any specific topic, country, or bhava phalit
+  const isTopicFocused = activeTabMode === 'topics' && activeTopic !== null && selectedTopicId !== null;
+  const isCountryFocused = activeTabMode === 'foreign' && selectedCountryEval !== null && selectedCountryId !== null;
+  const isBhavaFocused = activeTabMode === 'bhavas' && selectedBhavaNum !== null;
+  const isAnyPhalitFocused = isTopicFocused || isCountryFocused || isBhavaFocused;
+
+  // WHEN ANY TOPIC, COUNTRY, OR BHAVA IS TAPPED:
+  // ONLY THAT PHALIT IS DISPLAYED! NO OTHER MENUS CAN COVER OR OBSCURE IT!
+  if (isAnyPhalitFocused && prediction) {
+    return (
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-5 space-y-5 pb-36 animate-fadeIn">
+        {/* CASE A: 30 LIFE TOPIC FOCUSED PHALIT */}
+        {isTopicFocused && activeTopic && (
+          <div className="space-y-4">
+            {/* Top Navigation Bar: Clean, focused, no other menus */}
+            <div className="bg-gradient-to-r from-amber-950/95 via-stone-900 to-amber-950/95 border border-amber-600/70 rounded-2xl p-3.5 shadow-xl flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedTopicId(null)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                <LayoutGrid className="w-4 h-4 text-stone-950" />
+                <span>{lang === 'ne' ? '← सबै विषयहरू' : '← All Topics'}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={activeIndex <= 0}
+                  onClick={() => {
+                    if (activeIndex > 0) {
+                      setSelectedTopicId(filteredTopics[activeIndex - 1].id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{lang === 'ne' ? 'अघिल्लो' : 'Prev'}</span>
+                </button>
+
+                <span className="text-xs text-amber-300 font-mono font-bold bg-black/60 px-2.5 py-1 rounded-lg border border-amber-800/60">
+                  {activeIndex + 1} / {filteredTopics.length}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={activeIndex >= filteredTopics.length - 1}
+                  onClick={() => {
+                    if (activeIndex < filteredTopics.length - 1) {
+                      setSelectedTopicId(filteredTopics[activeIndex + 1].id);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <span>{lang === 'ne' ? 'अर्को' : 'Next'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* FOCUSED PHALIT CARD: FULL, PROMINENT & UNOBSTRUCTED */}
+            <div className="bg-gradient-to-b from-amber-950/90 via-black to-amber-950/95 border-2 border-amber-500/80 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-amber-800/60">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase font-bold text-amber-400 bg-amber-900/60 px-2.5 py-0.5 rounded-md border border-amber-700/60">
+                      {lang === 'ne' ? activeTopic.categoryNe : activeTopic.categoryEn}
+                    </span>
+                    <span className="text-xs text-amber-300/80 font-mono">
+                      (विषय {activeIndex + 1}/{filteredTopics.length})
+                    </span>
+                    <span className="text-xs text-amber-400/90 font-serif">
+                      • वर्ष {targetYear} AD (वि.सं. {toNepaliDigits(prediction.yearBS)})
+                    </span>
+                  </div>
+                  <h3 className="font-serif font-bold text-xl sm:text-2xl text-amber-100 flex items-center gap-2 mt-1">
+                    <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                    <span>{lang === 'ne' ? activeTopic.topicNe : activeTopic.topicEn}</span>
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="inline-block bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-bold px-3.5 py-1 rounded-full">
+                      {lang === 'ne' ? activeTopic.ratingNe : activeTopic.ratingEn}
+                    </span>
+                    <div className="text-xs text-amber-300 font-mono font-bold mt-1">
+                      {lang === 'ne' ? `शुभता: ${activeTopic.score}%` : `Score: ${activeTopic.score}%`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prediction Paragraph */}
+              <div className="bg-black/60 p-4 sm:p-6 rounded-2xl border border-amber-800/50 shadow-inner">
+                <span className="text-xs font-serif font-bold text-amber-400 block mb-2.5">
+                  📜 {lang === 'ne' ? `वर्ष ${targetYear} (वि.सं. ${toNepaliDigits(prediction.yearBS)}) को विस्तृत फलादेश:` : `Detailed Predictions for Year ${targetYear}:`}
+                </span>
+                <p className="text-sm sm:text-base text-amber-100/95 leading-relaxed font-sans font-normal">
+                  {lang === 'ne' ? activeTopic.predictionNe : activeTopic.predictionEn}
+                </p>
+              </div>
+
+              {/* Meta details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 bg-amber-950/50 rounded-2xl border border-amber-800/50 text-xs sm:text-sm">
+                <div>
+                  <span className="text-amber-400 font-semibold block mb-1">{lang === 'ne' ? '🌟 मुख्य कारक ग्रहहरू:' : '🌟 Significators:'}</span>
+                  <span className="text-amber-200 font-serif text-sm">{lang === 'ne' ? activeTopic.rulingPlanetsNe : activeTopic.rulingPlanetsEn}</span>
+                </div>
+                <div>
+                  <span className="text-amber-400 font-semibold block mb-1">{lang === 'ne' ? '📅 सर्वाधिक शुभ महिनाहरू:' : '📅 Auspicious Months:'}</span>
+                  <span className="text-amber-200 font-serif text-sm">{lang === 'ne' ? activeTopic.auspiciousMonthsNe : activeTopic.auspiciousMonthsEn}</span>
+                </div>
+              </div>
+
+              {/* Remedies */}
+              {((lang === 'ne' ? activeTopic.remediesNe : activeTopic.remediesEn) || []).length > 0 && (
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/70 to-black/70 rounded-2xl border border-amber-700/60 text-xs sm:text-sm space-y-2.5">
+                  <span className="font-serif font-bold text-amber-300 flex items-center gap-2 text-sm">
+                    <ShieldCheck className="w-4.5 h-4.5 text-amber-400" />
+                    <span>{lang === 'ne' ? '🌿 फलदायक वैदिक तथा ज्योतिषीय अचुक उपाय:' : '🌿 Astrological Remedies:'}</span>
+                  </span>
+                  <ul className="list-disc list-inside space-y-1.5 text-amber-200/95 pl-1 leading-relaxed">
+                    {(lang === 'ne' ? activeTopic.remediesNe : activeTopic.remediesEn).map((r, rIdx) => (
+                      <li key={rIdx}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Bottom Navigation */}
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-amber-800/50">
+                <button
+                  type="button"
+                  disabled={activeIndex <= 0}
+                  onClick={() => {
+                    if (activeIndex > 0) {
+                      setSelectedTopicId(filteredTopics[activeIndex - 1].id);
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{lang === 'ne' ? '← अघिल्लो फलित' : '← Previous'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={activeIndex >= filteredTopics.length - 1}
+                  onClick={() => {
+                    if (activeIndex < filteredTopics.length - 1) {
+                      setSelectedTopicId(filteredTopics[activeIndex + 1].id);
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>{lang === 'ne' ? 'अर्को फलित →' : 'Next →'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CASE B: FOREIGN TRAVEL DESTINATION FOCUSED PHALIT */}
+        {isCountryFocused && selectedCountryEval && (
+          <div className="space-y-4">
+            {/* Top Navigation Bar */}
+            <div className="bg-gradient-to-r from-amber-950/95 via-stone-900 to-amber-950/95 border border-amber-600/70 rounded-2xl p-3.5 shadow-xl flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedCountryId(null)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                <LayoutGrid className="w-4 h-4 text-stone-950" />
+                <span>{lang === 'ne' ? '← सबै देशहरू' : '← All Countries'}</span>
+              </button>
+            </div>
+
+            {/* Country Diagnostic Card */}
+            <div className="bg-gradient-to-r from-amber-950 via-black to-amber-950 border-2 border-amber-500/90 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-800/60">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl sm:text-4xl">{selectedCountryEval.flag}</span>
+                  <div>
+                    <div className="text-[10px] text-amber-400 font-semibold uppercase">
+                      {selectedCountryEval.regionNe} • {selectedCountryEval.priorityBadgeNe}
+                    </div>
+                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-amber-100">
+                      {selectedCountryEval.nameNe}
+                    </h3>
+                    <p className="text-xs text-amber-300/80">{selectedCountryEval.nameEn}</p>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right bg-amber-900/40 border border-amber-700/60 p-3 rounded-xl">
+                  <span className="text-[10px] text-amber-400 block font-semibold uppercase">
+                    कुण्डली उपयुक्तता (Suitability)
+                  </span>
+                  <span className="font-serif font-bold text-xl sm:text-2xl text-amber-200">
+                    {selectedCountryEval.suitabilityScore}% अनुकूल
+                  </span>
+                  <span className="text-xs block text-amber-300 font-medium">
+                    {selectedCountryEval.gradeNe}
+                  </span>
+                </div>
+              </div>
+
+              {/* Score Visual Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] text-amber-300/80 font-medium">
+                  <span>उपयुक्तता स्तर</span>
+                  <span>{selectedCountryEval.suitabilityScore} / १००</span>
+                </div>
+                <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-800/60">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      selectedCountryEval.suitabilityScore >= 75
+                        ? 'bg-gradient-to-r from-emerald-500 to-amber-400'
+                        : selectedCountryEval.suitabilityScore >= 50
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-300'
+                        : 'bg-gradient-to-r from-rose-500 to-amber-500'
+                    }`}
+                    style={{ width: `${selectedCountryEval.suitabilityScore}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* 3 Metric Diagnosis Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="p-3 bg-amber-950/60 border border-amber-800/50 rounded-xl space-y-1">
+                  <span className="text-amber-400/90 font-medium block">✈️ वैदेशिक यात्रा सम्भावना</span>
+                  <span className="font-serif font-bold text-sm text-amber-100">{selectedCountryEval.travelYogaStrengthNe}</span>
+                </div>
+                <div className="p-3 bg-amber-950/60 border border-amber-800/50 rounded-xl space-y-1">
+                  <span className="text-amber-400/90 font-medium block">🏠 स्थायी बसोबास (PR/Green Card)</span>
+                  <span className="font-serif font-bold text-sm text-amber-100">{selectedCountryEval.settlementProspectsNe}</span>
+                </div>
+                <div className="p-3 bg-amber-950/60 border border-amber-800/50 rounded-xl space-y-1">
+                  <span className="text-amber-400/90 font-medium block">📅 भिसा/प्रस्थान उत्तम महिना</span>
+                  <span className="font-serif font-bold text-sm text-amber-100">{selectedCountryEval.visaSuccessTimingNe}</span>
+                </div>
+              </div>
+
+              {/* Purpose and Direction */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                <div className="p-3 bg-amber-950/60 border border-amber-800/40 rounded-xl space-y-1">
+                  <strong className="text-amber-300 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-amber-400" />
+                    अनुकूल दिशा (Direction):
+                  </strong>
+                  <p className="text-amber-200">{selectedCountryEval.directionNe}</p>
+                </div>
+
+                <div className="p-3 bg-amber-950/60 border border-amber-800/40 rounded-xl space-y-1">
+                  <strong className="text-amber-300 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-amber-400" />
+                    सर्वोत्तम प्रयोजन एवं क्षेत्र (Purpose):
+                  </strong>
+                  <p className="text-amber-200">{selectedCountryEval.favorablePurposeNe}</p>
+                </div>
+              </div>
+
+              {/* Planetary Reason */}
+              <div className="p-4 rounded-xl bg-amber-950/90 border border-amber-700/60 text-xs sm:text-sm text-amber-100/90 leading-relaxed space-y-1">
+                <strong className="text-amber-300 flex items-center gap-1.5 text-xs font-bold uppercase">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  ज्योतिषीय गहन विश्लेषण एवं कारण:
+                </strong>
+                <p>{selectedCountryEval.planetaryReasonNe}</p>
+              </div>
+
+              {/* Vedic Remedy */}
+              <div className="p-3.5 bg-amber-900/30 rounded-xl border border-amber-600/50 text-xs text-amber-200 flex items-start gap-2.5">
+                <span className="text-base">🌿</span>
+                <div>
+                  <strong className="text-amber-300 block mb-0.5">
+                    सफलता एवं शान्ति उपाय (Vedic Remedy):
+                  </strong>
+                  <p>{selectedCountryEval.remedyNe}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CASE C: 12 BHAVAS FOCUSED PHALIT */}
+        {isBhavaFocused && (() => {
+          const activeBhava = prediction.bhavas.find((b) => b.houseNum === selectedBhavaNum) || prediction.bhavas[0];
+          const currentIdx = prediction.bhavas.findIndex((b) => b.houseNum === activeBhava.houseNum);
+
+          return (
+            <div className="space-y-4">
+              {/* Top Navigation Bar */}
+              <div className="bg-gradient-to-r from-amber-950/95 via-stone-900 to-amber-950/95 border border-amber-600/70 rounded-2xl p-3.5 shadow-xl flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBhavaNum(null)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+                >
+                  <LayoutGrid className="w-4 h-4 text-stone-950" />
+                  <span>{lang === 'ne' ? '← सबै १२ भावहरू' : '← All 12 Bhavas'}</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={currentIdx <= 0}
+                    onClick={() => {
+                      if (currentIdx > 0) {
+                        setSelectedBhavaNum(prediction.bhavas[currentIdx - 1].houseNum);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>{lang === 'ne' ? 'अघिल्लो भाव' : 'Prev'}</span>
+                  </button>
+
+                  <span className="text-xs text-amber-300 font-mono font-bold bg-black/60 px-2.5 py-1 rounded-lg border border-amber-800/60">
+                    भाव #{activeBhava.houseNum}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={currentIdx >= prediction.bhavas.length - 1}
+                    onClick={() => {
+                      if (currentIdx < prediction.bhavas.length - 1) {
+                        setSelectedBhavaNum(prediction.bhavas[currentIdx + 1].houseNum);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <span>{lang === 'ne' ? 'अर्को भाव' : 'Next'}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Focused Bhava Card */}
+              <div className="bg-gradient-to-b from-amber-950/80 via-black to-amber-950/90 border-2 border-amber-500/80 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-amber-800/60">
+                  <div>
+                    <span className="text-xs font-bold text-amber-400 bg-amber-900/60 px-2.5 py-0.5 rounded-md border border-amber-700/60 font-mono">
+                      भाव #{activeBhava.houseNum} • {activeBhava.signNe} ({activeBhava.signLordNe})
+                    </span>
+                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-amber-100 mt-1">
+                      {activeBhava.titleNe}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="bg-amber-500/20 text-amber-300 text-sm px-3 py-1 rounded-full border border-amber-500/40 font-bold font-mono">
+                      शुभता: {activeBhava.statusScore}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs sm:text-sm text-amber-300/90 font-serif italic bg-amber-900/20 p-3 rounded-xl border border-amber-800/40">
+                  🎯 <strong>मुख्य प्रतिनिधित्व विषय:</strong> {activeBhava.coreThemesNe}
+                </div>
+
+                <div className="bg-black/50 p-4 sm:p-5 rounded-2xl border border-amber-800/40">
+                  <span className="text-xs font-serif font-bold text-amber-400 block mb-2">
+                    📜 वर्ष {targetYear} को भाव फलादेश:
+                  </span>
+                  <p className="text-sm sm:text-base text-amber-100/90 leading-relaxed font-sans">
+                    {activeBhava.analysisNe}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-amber-950/40 rounded-2xl border border-amber-800/50 space-y-2">
+                  <span className="text-xs sm:text-sm font-bold text-amber-300 block">
+                    ✨ यस भावबाट वर्ष {targetYear} मा मुख्य अपेक्षित उपलब्धिहरू:
+                  </span>
+                  <ul className="list-disc list-inside text-xs sm:text-sm text-amber-200/90 space-y-1">
+                    {activeBhava.keyEventsNe.map((ev, eIdx) => (
+                      <li key={eIdx}>{ev}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Bottom Navigation for Bhava */}
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-amber-800/50">
+                  <button
+                    type="button"
+                    disabled={currentIdx <= 0}
+                    onClick={() => {
+                      if (currentIdx > 0) {
+                        setSelectedBhavaNum(prediction.bhavas[currentIdx - 1].houseNum);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>{lang === 'ne' ? '← अघिल्लो भाव' : '← Previous House'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={currentIdx >= prediction.bhavas.length - 1}
+                    onClick={() => {
+                      if (currentIdx < prediction.bhavas.length - 1) {
+                        setSelectedBhavaNum(prediction.bhavas[currentIdx + 1].houseNum);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-800 text-amber-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>{lang === 'ne' ? 'अर्को भाव →' : 'Next House →'}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -538,100 +925,6 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
         </div>
       </div>
 
-      {/* ACTIVE DASHA & ANNUAL HIGHLIGHT SUMMARY STRIP */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Active Dasha Box */}
-        <div className="bg-gradient-to-br from-amber-950/80 to-black p-4 rounded-xl border border-amber-700/50 shadow-lg space-y-2">
-          <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase tracking-wide">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-amber-400" />
-              <span>{lang === 'ne' ? 'सक्रिय महादशा एवं अन्तर्दशा' : 'Active Dasha & Antardasha'}</span>
-            </span>
-            <span className="bg-amber-800/50 text-amber-200 px-2 py-0.5 rounded text-[10px]">
-              {lang === 'ne' ? prediction.dashaInfo.dashaLordDignityNe : prediction.dashaInfo.dashaLordDignityEn}
-            </span>
-          </div>
-          <div className="font-serif font-bold text-lg text-amber-100">
-            {lang === 'ne' ? `${prediction.dashaInfo.mahadashaNe} महादशा` : `${prediction.dashaInfo.mahadashaEn} Mahadasha`}
-          </div>
-          <p className="text-xs text-amber-300/90 font-sans">
-            {lang === 'ne'
-              ? `👉 ${prediction.dashaInfo.antardashaNe} अन्तर्दशा र ${prediction.dashaInfo.pratyantardashaNe} प्रत्यन्तर`
-              : `👉 ${prediction.dashaInfo.antardashaEn} Antardasha & ${prediction.dashaInfo.pratyantardashaEn} Pratyantardasha`}
-          </p>
-          <div className="text-[11px] text-amber-400/80 pt-1 border-t border-amber-800/40">
-            {lang === 'ne'
-              ? `${prediction.dashaInfo.mahadashaNe} कुण्डलीको ${prediction.dashaInfo.mahadashaLordHouse} औँ भावमा अवस्थित छ।`
-              : `${prediction.dashaInfo.mahadashaEn} placed in House ${prediction.dashaInfo.mahadashaLordHouse} of chart.`}
-          </div>
-        </div>
-
-        {/* Overall Rating & Score Box */}
-        <div className="bg-gradient-to-br from-amber-950/80 to-black p-4 rounded-xl border border-amber-700/50 shadow-lg space-y-2">
-          <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase tracking-wide">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>{lang === 'ne' ? 'वार्षिक शुभता दर (Year Score)' : 'Annual Auspicious Score'}</span>
-            </span>
-            <span className="text-sm font-bold text-amber-200">{prediction.overallScore}%</span>
-          </div>
-          <div className="font-serif font-bold text-lg text-amber-100">
-            {lang === 'ne' ? prediction.overallRatingNe : prediction.overallRatingEn}
-          </div>
-          <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden border border-amber-800/60">
-            <div
-              className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${prediction.overallScore}%` }}
-            />
-          </div>
-          <div className="text-[11px] text-amber-300/80 pt-1 border-t border-amber-800/40">
-            {lang === 'ne'
-              ? `भाग्य र कर्मक्षेत्रमा ${prediction.overallScore >= 75 ? 'तीव्र प्रगति' : 'धैर्य एवं सतर्कता'} आवश्यक।`
-              : `In career and destiny: ${prediction.overallScore >= 75 ? 'Rapid progress indicated' : 'Patience and caution advised'}.`}
-          </div>
-        </div>
-
-        {/* Auspicious Months Box */}
-        <div className="bg-gradient-to-br from-amber-950/80 to-black p-4 rounded-xl border border-amber-700/50 shadow-lg space-y-2">
-          <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase tracking-wide">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-amber-400" />
-              <span>{lang === 'ne' ? 'प्रमुख शुभ महिनाहरू' : 'Peak Auspicious Months'}</span>
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {(lang === 'ne' ? prediction.keyAuspiciousMonthsNe : prediction.keyAuspiciousMonthsEn).map((m, idx) => (
-              <span
-                key={idx}
-                className="bg-amber-900/60 text-amber-200 border border-amber-700/60 px-2 py-0.5 rounded-md text-xs font-semibold"
-              >
-                ✓ {m}
-              </span>
-            ))}
-          </div>
-          <p className="text-[11px] text-amber-400/80 pt-1 border-t border-amber-800/40">
-            {lang === 'ne'
-              ? 'नयाँ काम थाल्न, लगानी, विवाह र भिसा आवेदनका लागि सर्वोत्तम समय।'
-              : 'Best period for initiating new endeavors, investments, marriage, and visas.'}
-          </p>
-        </div>
-      </div>
-
-      {/* OVERALL EXECUTIVE ANNUAL FORECAST SUMMARY */}
-      <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/90 via-black to-amber-950/90 border border-amber-600/60 rounded-xl shadow-xl space-y-2">
-        <h3 className="font-serif font-bold text-amber-200 text-sm sm:text-base flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-amber-400" />
-          <span>
-            {lang === 'ne'
-              ? `वर्ष ${targetYear} (वि.सं. ${toNepaliDigits(prediction.yearBS)}) को समग्र ज्योतिषीय सारांश:`
-              : `Annual Astrological Forecast for Year ${targetYear} (BS ${prediction.yearBS}):`}
-          </span>
-        </h3>
-        <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed font-sans">
-          {lang === 'ne' ? prediction.overallSummaryNe : prediction.overallSummaryEn}
-        </p>
-      </div>
-
       {!hasAccessToPhalit ? (
         <SubscriptionGateCard
           featureName={lang === 'ne' ? 'वार्षिक १२ भाव फलित तथा ३० क्षेत्रको सटिक भविष्यवाणी' : 'Annual 12 Bhavas Phalit & 30 Life Areas Forecast'}
@@ -643,77 +936,87 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
         />
       ) : (
         <>
-          {/* NAVIGATION SUB-TABS: TOPICS | FOREIGN COUNTRIES | 12 BHAVAS | DASHA REMEDIES | ASK AI */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-amber-800/60 scrollbar-thin">
-        <button
-          type="button"
-          onClick={() => setActiveTabMode('topics')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-serif font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-            activeTabMode === 'topics'
-              ? 'bg-amber-500 text-amber-950 border-amber-300 shadow-lg scale-105'
-              : 'bg-amber-950/70 text-amber-200 border-amber-800/60 hover:bg-amber-900/40'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>{lang === 'ne' ? '१. ३० क्षेत्रको सटिक फलित' : '1. 30 Life Areas Phalit'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTabMode('foreign')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-serif font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-            activeTabMode === 'foreign'
-              ? 'bg-amber-500 text-amber-950 border-amber-300 shadow-lg scale-105'
-              : 'bg-amber-950/70 text-amber-200 border-amber-800/60 hover:bg-amber-900/40'
-          }`}
-        >
-          <Plane className="w-4 h-4" />
-          <span>{lang === 'ne' ? '२. विदेश यात्रा र कुन देश राम्रो' : '2. Foreign & Best Countries'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTabMode('bhavas')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-serif font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-            activeTabMode === 'bhavas'
-              ? 'bg-amber-500 text-amber-950 border-amber-300 shadow-lg scale-105'
-              : 'bg-amber-950/70 text-amber-200 border-amber-800/60 hover:bg-amber-900/40'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>{lang === 'ne' ? '३. १२ भाव वार्षिक विश्लेषण' : '3. 12 Bhavas Analysis'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTabMode('dasha')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-serif font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-            activeTabMode === 'dasha'
-              ? 'bg-amber-500 text-amber-950 border-amber-300 shadow-lg scale-105'
-              : 'bg-amber-950/70 text-amber-200 border-amber-800/60 hover:bg-amber-900/40'
-          }`}
-        >
-          <Flame className="w-4 h-4" />
-          <span>{lang === 'ne' ? '४. दशा गोचर र अचुक उपाय' : '4. Dasha & Remedies'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTabMode('ai')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-serif font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-            activeTabMode === 'ai'
-              ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 border-amber-200 shadow-lg scale-105 font-bold'
-              : 'bg-amber-900/50 text-amber-300 border-amber-700 hover:bg-amber-800/50'
-          }`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span>{lang === 'ne' ? '५. पण्डितजीसँग व्यक्तिगत प्रश्न' : '5. Ask Astrologer AI'}</span>
-        </button>
-      </div>
+          {/* FOLDER NAVIGATION TABS */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 pb-2 border-b border-amber-800/60">
+            {[
+              {
+                id: 'topics' as const,
+                badge: '१',
+                titleNe: '३० क्षेत्रको सटिक फलित',
+                titleEn: '30 Life Areas Phalit',
+                descNe: 'जागिर, धन, विवाह, स्वास्थ्य...',
+                descEn: 'Career, wealth, marriage...',
+                icon: Sparkles
+              },
+              {
+                id: 'foreign' as const,
+                badge: '२',
+                titleNe: 'विदेश यात्रा र देश अनुकूलता',
+                titleEn: 'Foreign Travel & Countries',
+                descNe: 'विश्वका देशहरूको विश्लेषण',
+                descEn: 'World country astro ratings',
+                icon: Plane
+              },
+              {
+                id: 'bhavas' as const,
+                badge: '३',
+                titleNe: '१२ भाव वार्षिक विश्लेषण',
+                titleEn: '12 Bhavas Analysis',
+                descNe: '१ देखि १२ भावको फलादेश',
+                descEn: '1st to 12th houses forecast',
+                icon: Layers
+              },
+              {
+                id: 'dasha' as const,
+                badge: '४',
+                titleNe: 'दशा गोचर र अचुक उपाय',
+                titleEn: 'Dasha & Remedies',
+                descNe: 'महादशा, गोचर र पञ्चमहाउपाय',
+                descEn: 'Dasha, transit and remedies',
+                icon: Flame
+              }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTabMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTabMode(tab.id)}
+                  className={`p-3 rounded-2xl text-left transition-all border flex flex-col justify-between gap-2 shadow-md cursor-pointer ${
+                    isActive
+                      ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-stone-950 border-amber-300 ring-2 ring-amber-300/70 shadow-amber-500/30 scale-[1.02]'
+                      : 'bg-stone-900/90 text-amber-200/90 border-amber-800/60 hover:bg-amber-950/80 hover:border-amber-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-2 rounded-xl ${isActive ? 'bg-stone-950/20 text-stone-950' : 'bg-amber-900/40 text-amber-400'}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    {isActive ? (
+                      <span className="w-2.5 h-2.5 rounded-full bg-stone-950 animate-pulse" />
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold text-amber-400/80 px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800/60">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className={`text-xs sm:text-sm font-serif font-bold leading-tight ${isActive ? 'text-stone-950' : 'text-amber-100'}`}>
+                      {lang === 'ne' ? tab.titleNe : tab.titleEn}
+                    </h4>
+                    <span className={`text-[10px] block mt-0.5 line-clamp-1 ${isActive ? 'text-stone-900/80' : 'text-amber-400/70'}`}>
+                      {lang === 'ne' ? tab.descNe : tab.descEn}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
       {/* TAB 1: 30 COMPREHENSIVE LIFE TOPICS */}
       {activeTabMode === 'topics' && (
-        <div className="space-y-5">
+        <div className="space-y-4 animate-fadeIn">
           {/* Filter & Search Bar */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-amber-950/60 p-3 rounded-xl border border-amber-800/50">
             {/* Category Buttons */}
@@ -723,7 +1026,7 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs whitespace-nowrap transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs whitespace-nowrap transition-all cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-amber-500 text-amber-950 font-bold shadow'
                       : 'bg-amber-900/30 text-amber-300 hover:bg-amber-800/50 border border-amber-800/40'
@@ -748,63 +1051,32 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
           </div>
 
           {/* Topics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredTopics.map((topic, idx) => (
-              <div
-                key={topic.id}
-                className="bg-gradient-to-b from-amber-950/70 to-black/90 border border-amber-800/60 hover:border-amber-500/70 rounded-2xl p-4 sm:p-5 shadow-xl transition-all space-y-3"
-              >
-                <div className="flex items-start justify-between gap-3 pb-2 border-b border-amber-800/50">
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] text-amber-400/80 uppercase font-semibold">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
+              {filteredTopics.map((topic) => (
+                <button
+                  key={topic.id}
+                  type="button"
+                  onClick={() => setSelectedTopicId(topic.id)}
+                  className="p-3 rounded-2xl text-left border border-amber-800/60 bg-stone-900/90 hover:border-amber-400 hover:bg-amber-950/80 transition-all flex flex-col justify-between gap-2 cursor-pointer shadow hover:scale-[1.02] group"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[9px] uppercase font-semibold text-amber-400/80 line-clamp-1">
                       {lang === 'ne' ? topic.categoryNe : topic.categoryEn}
-                    </div>
-                    <h3 className="font-serif font-bold text-base text-amber-100 flex items-center gap-2">
-                      <span>{lang === 'ne' ? topic.topicNe : topic.topicEn}</span>
-                    </h3>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="inline-block bg-amber-500/20 text-amber-300 border border-amber-600/40 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                      {lang === 'ne' ? topic.ratingNe : topic.ratingEn}
                     </span>
-                    <div className="text-[10px] text-amber-400/70 font-mono mt-0.5">
-                      {lang === 'ne' ? `शुभता: ${topic.score}%` : `Score: ${topic.score}%`}
-                    </div>
+                    <span className="text-[10px] font-bold font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300">
+                      {topic.score}%
+                    </span>
                   </div>
-                </div>
-
-                {/* Prediction Paragraph */}
-                <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed font-sans">
-                  {lang === 'ne' ? topic.predictionNe : topic.predictionEn}
-                </p>
-
-                {/* Meta details footer */}
-                <div className="pt-2 border-t border-amber-800/40 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <span className="text-amber-400 font-semibold">{lang === 'ne' ? '🌟 कारक ग्रह: ' : '🌟 Significators: '}</span>
-                    <span className="text-amber-200">{lang === 'ne' ? topic.rulingPlanetsNe : topic.rulingPlanetsEn}</span>
+                  <div className="font-serif font-bold text-xs sm:text-sm text-amber-100 group-hover:text-amber-300 leading-snug line-clamp-2">
+                    {lang === 'ne' ? topic.topicNe : topic.topicEn}
                   </div>
-                  <div>
-                    <span className="text-amber-400 font-semibold">{lang === 'ne' ? '📅 शुभ महिना: ' : '📅 Auspicious Months: '}</span>
-                    <span className="text-amber-200">{lang === 'ne' ? topic.auspiciousMonthsNe : topic.auspiciousMonthsEn}</span>
+                  <div className="flex items-center justify-between text-[10px] text-amber-400/70 pt-1 border-t border-amber-900/40">
+                    <span className="line-clamp-1">{lang === 'ne' ? topic.ratingNe : topic.ratingEn}</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform text-amber-400" />
                   </div>
-                </div>
-
-                {/* Remedial Advice */}
-                {((lang === 'ne' ? topic.remediesNe : topic.remediesEn) || []).length > 0 && (
-                  <div className="p-2.5 bg-amber-900/20 rounded-lg border border-amber-800/40 text-[11px] text-amber-300 space-y-1">
-                    <span className="font-bold text-amber-200 block">{lang === 'ne' ? '🌿 फलदायक वैदिक उपाय:' : '🌿 Astrological Remedies:'}</span>
-                    <ul className="list-disc list-inside space-y-0.5 text-amber-300/90">
-                      {(lang === 'ne' ? topic.remediesNe : topic.remediesEn).map((r, rIdx) => (
-                        <li key={rIdx}>{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
         </div>
       )}
 
@@ -830,11 +1102,6 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                 </button>
               )}
             </div>
-
-            {/* Quick Helper Text */}
-            <p className="text-xs text-amber-200/80">
-              💡 विश्वको कुनै पनि देश चुज गर्नुहोस् वा सर्च गर्नुहोस्। देश छनोट गरेपछि मात्र तपाईँको कुण्डली अनुसार कति % राम्रो छ, वैदेशिक योग, स्थायी बसोबास (PR) तथा भिसा समय विस्तृत रूपमा देखिनेछ।
-            </p>
 
             {/* Search Input Bar */}
             <div className="relative">
@@ -925,166 +1192,39 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
             </div>
           </div>
 
-          {/* CASE 1: A COUNTRY IS CHOSEN OR SEARCHED -> SHOW FULL DIAGNOSTICS RIGHT INSIDE */}
-          {selectedCountryEval ? (
-            <div className="space-y-5 animate-fadeIn">
-              {/* Country Diagnostic Header Card */}
-              <div className="bg-gradient-to-r from-amber-950 via-black to-amber-950 border-2 border-amber-500/90 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-800/60">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl sm:text-4xl">{selectedCountryEval.flag}</span>
-                    <div>
-                      <div className="text-[10px] text-amber-400 font-semibold uppercase">
-                        {selectedCountryEval.regionNe} • {selectedCountryEval.priorityBadgeNe}
-                      </div>
-                      <h3 className="font-serif font-bold text-xl sm:text-2xl text-amber-100">
-                        {selectedCountryEval.nameNe}
-                      </h3>
-                      <p className="text-xs text-amber-300/80">{selectedCountryEval.nameEn}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-left sm:text-right bg-amber-900/40 border border-amber-700/60 p-3 rounded-xl">
-                    <span className="text-[10px] text-amber-400 block font-semibold uppercase">
-                      कुण्डली उपयुक्तता (Suitability)
-                    </span>
-                    <span className="font-serif font-bold text-xl sm:text-2xl text-amber-200">
-                      {selectedCountryEval.suitabilityScore}% अनुकूल
-                    </span>
-                    <span className="text-xs block text-amber-300 font-medium">
-                      {selectedCountryEval.gradeNe}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Score Visual Bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] text-amber-300/80 font-medium">
-                    <span>उपयुक्तता स्तर</span>
-                    <span>{selectedCountryEval.suitabilityScore} / १००</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-800/60">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-300 rounded-full transition-all duration-500"
-                      style={{ width: `${selectedCountryEval.suitabilityScore}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* 3 ESSENTIAL DIAGNOSTICS: वैदेशिक योग, स्थायी बसोबास (PR) तथा भिसा समय */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-2">
-                  <div className="p-3.5 bg-amber-900/30 border border-amber-700/60 rounded-xl space-y-1">
-                    <span className="text-amber-400 font-semibold block uppercase text-[10px] flex items-center gap-1">
-                      <Plane className="w-3.5 h-3.5 text-amber-400" />
-                      वैदेशिक योग सामर्थ्य
-                    </span>
-                    <span className="font-serif font-bold text-amber-100 text-sm block">
-                      {selectedCountryEval.travelYogaStrengthNe}
-                    </span>
-                    <p className="text-[11px] text-amber-300/80">
-                      १२ औँ भाव ({activeKundali?.houseDetails?.[11]?.signNe || 'मीन'}) र राहुको अनुकूल स्थिति।
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 bg-amber-900/30 border border-amber-700/60 rounded-xl space-y-1">
-                    <span className="text-amber-400 font-semibold block uppercase text-[10px] flex items-center gap-1">
-                      <Home className="w-3.5 h-3.5 text-amber-400" />
-                      स्थायी बसोबास (PR) / करिअर सम्भावना
-                    </span>
-                    <span className="font-serif font-bold text-amber-100 text-sm block">
-                      {selectedCountryEval.settlementProspectsNe}
-                    </span>
-                    <p className="text-[11px] text-amber-300/80">
-                      उच्च शिक्षा, दक्ष जनशक्ति वा व्यावसायिक भिसा मार्फत।
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 bg-amber-900/30 border border-amber-700/60 rounded-xl space-y-1">
-                    <span className="text-amber-400 font-semibold block uppercase text-[10px] flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      भिसा सफलताको उत्तम समय
-                    </span>
-                    <span className="font-serif font-bold text-amber-100 text-sm block">
-                      {selectedCountryEval.visaSuccessTimingNe}
-                    </span>
-                    <p className="text-[11px] text-amber-300/80">
-                      कागजात तयार गर्दा पूर्व वा उत्तर फर्केर हस्ताक्षर गर्नुहोस्।
-                    </p>
-                  </div>
-                </div>
-
-                {/* Purpose and Direction */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-                  <div className="p-3 bg-amber-950/60 border border-amber-800/40 rounded-xl space-y-1">
-                    <strong className="text-amber-300 flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-amber-400" />
-                      अनुकूल दिशा (Direction):
-                    </strong>
-                    <p className="text-amber-200">{selectedCountryEval.directionNe}</p>
-                  </div>
-
-                  <div className="p-3 bg-amber-950/60 border border-amber-800/40 rounded-xl space-y-1">
-                    <strong className="text-amber-300 flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-amber-400" />
-                      सर्वोत्तम प्रयोजन एवं क्षेत्र (Purpose):
-                    </strong>
-                    <p className="text-amber-200">{selectedCountryEval.favorablePurposeNe}</p>
-                  </div>
-                </div>
-
-                {/* Planetary Reason */}
-                <div className="p-4 rounded-xl bg-amber-950/90 border border-amber-700/60 text-xs sm:text-sm text-amber-100/90 leading-relaxed space-y-1">
-                  <strong className="text-amber-300 flex items-center gap-1.5 text-xs font-bold uppercase">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    ज्योतिषीय गहन विश्लेषण एवं कारण:
-                  </strong>
-                  <p>{selectedCountryEval.planetaryReasonNe}</p>
-                </div>
-
-                {/* Vedic Remedy */}
-                <div className="p-3.5 bg-amber-900/30 rounded-xl border border-amber-600/50 text-xs text-amber-200 flex items-start gap-2.5">
-                  <span className="text-base">🌿</span>
-                  <div>
-                    <strong className="text-amber-300 block mb-0.5">
-                      सफलता एवं शान्ति उपाय (Vedic Remedy):
-                    </strong>
-                    <p>{selectedCountryEval.remedyNe}</p>
-                  </div>
-                </div>
-              </div>
+          {/* INTERACTIVE COUNTRY SELECTOR GRID (ALWAYS VISIBLE - NO BACK NEEDED) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif font-bold text-amber-200 text-sm sm:text-base flex items-center gap-2">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                <span>{lang === 'ne' ? 'देश छनोट गर्नुहोस् (क्लिक गरी फलादेश हेर्नुहोस्):' : 'Select Country from Grid:'}</span>
+              </h3>
+              <span className="text-xs text-amber-400/80">
+                {lang === 'ne' ? `कुल ${filteredWorldCountries.length} देशहरू` : `Total ${filteredWorldCountries.length} Countries`}
+              </span>
             </div>
-          ) : (
-            /* CASE 2: NO COUNTRY SELECTED YET -> SHOW INTERACTIVE COUNTRY SELECTOR GRID */
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif font-bold text-amber-200 text-base flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-amber-400" />
-                  <span>देश छनोट गर्नुहोस् (Select Any Country from List):</span>
-                </h3>
-                <span className="text-xs text-amber-400/80">
-                  कुल {filteredWorldCountries.length} देशहरू
-                </span>
-              </div>
 
-              {filteredWorldCountries.length === 0 ? (
-                <div className="p-8 text-center bg-amber-950/40 border border-amber-800/40 rounded-2xl space-y-2">
-                  <p className="text-amber-300 font-medium text-sm">
-                    तपाईँले खोज्नुभएको नामको देश फेला परेन।
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCountrySearchQuery('');
-                      setCountryContinentFilter('all');
-                    }}
-                    className="text-xs text-amber-400 underline hover:text-amber-200"
-                  >
-                    सबै देशहरूको सूची हेर्नुहोस्
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {filteredWorldCountries.map((c) => (
+            {filteredWorldCountries.length === 0 ? (
+              <div className="p-6 text-center bg-amber-950/40 border border-amber-800/40 rounded-2xl space-y-2">
+                <p className="text-amber-300 font-medium text-sm">
+                  {lang === 'ne' ? 'तपाईँले खोज्नुभएको नामको देश फेला परेन।' : 'No matching country found.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCountrySearchQuery('');
+                    setCountryContinentFilter('all');
+                  }}
+                  className="text-xs text-amber-400 underline hover:text-amber-200"
+                >
+                  {lang === 'ne' ? 'सबै देशहरूको सूची हेर्नुहोस्' : 'View all countries'}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 max-h-[260px] overflow-y-auto pr-1 scrollbar-thin">
+                {filteredWorldCountries.map((c) => {
+                  const isSelected = selectedCountryId === c.id;
+                  return (
                     <button
                       key={c.id}
                       type="button"
@@ -1092,78 +1232,67 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
                         setSelectedCountryId(c.id);
                         setCountrySearchQuery('');
                       }}
-                      className="p-3.5 bg-gradient-to-b from-amber-950/70 to-black/90 border border-amber-800/60 hover:border-amber-400 hover:bg-amber-900/50 rounded-xl text-left transition-all duration-200 hover:scale-[1.02] shadow group flex flex-col justify-between gap-2"
+                      className={`p-2.5 rounded-xl text-left transition-all border flex flex-col justify-between gap-1.5 cursor-pointer shadow-sm ${
+                        isSelected
+                          ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-stone-950 border-amber-200 ring-2 ring-amber-300 scale-[1.02]'
+                          : 'bg-stone-900/90 text-amber-200 border-amber-800/60 hover:border-amber-400 hover:bg-amber-950/80'
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-2xl">{c.flag}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl sm:text-2xl shrink-0">{c.flag}</span>
                         <div className="overflow-hidden">
-                          <h4 className="font-serif font-bold text-amber-100 text-sm group-hover:text-amber-300 truncate">
-                            {c.nameNe}
+                          <h4 className={`font-serif font-bold text-xs sm:text-sm truncate ${isSelected ? 'text-stone-950' : 'text-amber-100'}`}>
+                            {lang === 'ne' ? c.nameNe : c.nameEn}
                           </h4>
-                          <span className="text-[10px] text-amber-400/70 block truncate">
-                            {c.regionNe}
+                          <span className={`text-[9px] block truncate ${isSelected ? 'text-stone-900/80' : 'text-amber-400/70'}`}>
+                            {lang === 'ne' ? c.regionNe : c.regionEn}
                           </span>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-amber-900/40 text-[11px] text-amber-400">
-                        <span className="text-[10px] opacity-80">क्लिक गरी हेर्नुहोस्</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 3: 12 BHAVAS COMPREHENSIVE YEARLY ANALYSIS */}
       {activeTabMode === 'bhavas' && (
-        <div className="space-y-5">
-          <div className="bg-amber-950/70 p-4 rounded-xl border border-amber-800/50 text-xs sm:text-sm text-amber-200">
-            📖 <strong>१२ भाव वार्षिक फलादेश:</strong> कुण्डलीका प्रत्येक भाव (House 1 to 12) ले जीवनका विभिन्न आयामलाई प्रतिनिधित्व गर्दछन्। वर्ष {targetYear} मा तपाईँको कुण्डलीका १२ वटै भावहरूमा ग्रहहरूको स्थिति र तिनको फलादेश तल विस्तृत रूपमा प्रस्तुत गरिएको छ:
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {prediction.bhavas.map((bhava) => (
-              <div
-                key={bhava.houseNum}
-                className="bg-gradient-to-b from-amber-950/80 to-black border border-amber-800/60 hover:border-amber-500/70 rounded-2xl p-4 shadow-xl space-y-3 transition-all"
-              >
-                <div className="flex items-start justify-between gap-2 pb-2 border-b border-amber-800/50">
-                  <div>
-                    <span className="text-[10px] text-amber-400 font-mono font-bold block">
-                      भाव #{bhava.houseNum} • {bhava.signNe} ({bhava.signLordNe})
+        <div className="space-y-4">
+          {/* 12 Bhavas Interactive Grid Selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
+            {prediction.bhavas.map((bhava) => {
+              const isSelected = selectedBhavaNum === bhava.houseNum;
+              return (
+                <button
+                  key={bhava.houseNum}
+                  type="button"
+                  onClick={() => setSelectedBhavaNum(bhava.houseNum)}
+                  className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between gap-1 cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-stone-950 border-amber-200 ring-2 ring-amber-300 shadow-lg scale-[1.02]'
+                      : 'bg-stone-900/90 text-amber-200 border-amber-800/60 hover:border-amber-500/70 hover:bg-amber-950/70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-stone-900' : 'text-amber-400'}`}>
+                      भाव #{bhava.houseNum}
                     </span>
-                    <h4 className="font-serif font-bold text-sm text-amber-100">
-                      {bhava.titleNe}
-                    </h4>
+                    <span className={`text-[10px] font-bold font-mono px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-stone-950/20 text-stone-950' : 'bg-amber-500/20 text-amber-300'}`}>
+                      {bhava.statusScore}%
+                    </span>
                   </div>
-                  <span className="bg-amber-900/60 text-amber-300 text-xs px-2 py-0.5 rounded-full border border-amber-700 font-bold">
-                    {bhava.statusScore}%
-                  </span>
-                </div>
-
-                <div className="text-[11px] text-amber-400/90 font-medium italic">
-                  विषय: {bhava.coreThemesNe}
-                </div>
-
-                <p className="text-xs text-amber-200/90 leading-relaxed font-sans">
-                  {bhava.analysisNe}
-                </p>
-
-                <div className="pt-2 border-t border-amber-800/40 space-y-1">
-                  <span className="text-[11px] font-bold text-amber-300 block">मुख्य अपेक्षित उपलब्धि:</span>
-                  <ul className="list-disc list-inside text-[11px] text-amber-200/80 space-y-0.5">
-                    {bhava.keyEventsNe.map((ev, eIdx) => (
-                      <li key={eIdx}>{ev}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
+                  <div className={`font-serif font-bold text-xs sm:text-sm line-clamp-1 ${isSelected ? 'text-stone-950' : 'text-amber-100'}`}>
+                    {bhava.titleNe}
+                  </div>
+                  <div className={`text-[10px] line-clamp-1 ${isSelected ? 'text-stone-900/80' : 'text-amber-400/70'}`}>
+                    {bhava.signNe} ({bhava.signLordNe})
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1180,6 +1309,47 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
               <span className="bg-amber-900/80 text-amber-300 text-xs px-3 py-1 rounded-full border border-amber-700/60 font-mono">
                 {prediction.dashaInfo.periodSummaryNe}
               </span>
+            </div>
+
+            {/* Annual Rating & Peak Auspicious Months in Tab 4 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-amber-950/70 border border-amber-800/60 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'ne' ? 'वार्षिक शुभता दर' : 'Annual Score'}</span>
+                  </span>
+                  <span className="font-bold text-amber-200">{prediction.overallScore}%</span>
+                </div>
+                <div className="font-serif font-bold text-base text-amber-100">
+                  {lang === 'ne' ? prediction.overallRatingNe : prediction.overallRatingEn}
+                </div>
+                <div className="w-full bg-black/60 rounded-full h-2 overflow-hidden border border-amber-800/60">
+                  <div
+                    className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${prediction.overallScore}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-amber-950/70 border border-amber-800/60 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'ne' ? 'प्रमुख शुभ महिनाहरू' : 'Peak Auspicious Months'}</span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {(lang === 'ne' ? prediction.keyAuspiciousMonthsNe : prediction.keyAuspiciousMonthsEn).map((m, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-amber-900/60 text-amber-200 border border-amber-700/60 px-2 py-0.5 rounded-md text-xs font-semibold"
+                    >
+                      ✓ {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Dasha Hierarchy Cards (Maha, Antar, Pratyantar) */}
@@ -1285,106 +1455,6 @@ export const YearlyPhalitSection: React.FC<YearlyPhalitSectionProps> = ({
               </ul>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* TAB 5: ASK PANDIT SHAMBHU PRASAD LAMSAL (AI CONSULTATION) */}
-      {activeTabMode === 'ai' && (
-        <div className="bg-gradient-to-br from-amber-950/90 via-black to-amber-950/90 border border-amber-600/70 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-5">
-          <div className="flex items-start justify-between gap-4 pb-4 border-b border-amber-800/60">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-full bg-amber-600 flex items-center justify-center text-amber-950 font-serif font-bold text-xs">
-                  ॐ
-                </span>
-                <h3 className="font-serif font-bold text-lg text-amber-100">
-                  {lang === 'ne'
-                    ? `ज्योतिष पण्डित शम्भु प्रसाद लम्सालसँग वर्ष ${targetYear} को परामर्श`
-                    : `Personalized AI Astrology Consultation for Year ${targetYear}`}
-                </h3>
-              </div>
-              <p className="text-xs text-amber-300/80">
-                {lang === 'ne'
-                  ? 'यस वर्षको विवाह, जागिर, विदेश यात्रा, व्यापार, घरजग्गा वा स्वास्थ्य सम्बन्धी कुनै पनि जिज्ञासा सोध्नुहोस्।'
-                  : 'Ask any specific question regarding career, marriage, foreign travel, business, or health for this year.'}
-              </p>
-            </div>
-          </div>
-
-          {/* Fast Question Chips */}
-          <div className="space-y-2">
-            <span className="text-xs text-amber-400 font-semibold">
-              {lang === 'ne' ? 'प्रायः सोधिने प्रश्नहरू (Quick Select):' : 'Frequently Asked Questions:'}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'के यस वर्ष मेरो विदेशको भिसा लाग्छ र कुन देश जाँदा राम्रो?',
-                'यस वर्ष मेरो विवाह हुने योग कस्तो छ र कहिले लगन जुर्छ?',
-                'करियर र जागिरमा पदोन्नति वा नयाँ जागिर पाउने सम्भावना कति छ?',
-                'यस वर्ष नयाँ व्यापार वा शेयर बजारमा लगानी गर्दा फाइदा हुन्छ?',
-                'घर–जग्गा वा गाडी खरिद गर्ने सपना कहिले पूरा हुन्छ?'
-              ].map((q, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setCustomQuestion(q)}
-                  className="px-3 py-1.5 bg-amber-900/40 hover:bg-amber-800/60 text-amber-200 border border-amber-700/60 rounded-xl text-xs transition-all text-left"
-                >
-                  💬 {q}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleAskAI} className="space-y-3">
-            <div className="relative">
-              <textarea
-                rows={3}
-                value={customQuestion}
-                onChange={(e) => setCustomQuestion(e.target.value)}
-                placeholder={
-                  lang === 'ne'
-                    ? `वर्ष ${targetYear} को बारेमा आफ्नो कुनै पनि प्रश्न यहाँ लेख्नुहोस् (उदा. मेरो क्यानडाको पीआर भिसा कहिले लाग्ला?)...`
-                    : `Type your question for year ${targetYear}...`
-                }
-                className="w-full bg-black/80 border border-amber-700/70 rounded-xl p-3.5 text-sm text-amber-100 placeholder-amber-500/50 focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex items-center justify-end">
-              <button
-                type="submit"
-                disabled={isAiLoading || !customQuestion.trim()}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-amber-950 font-serif font-bold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shadow-xl disabled:opacity-50"
-              >
-                {isAiLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-950" />
-                    <span>{lang === 'ne' ? 'ज्योतिषीय विश्लेषण चल्दैछ...' : 'Consulting Astrology AI...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 text-amber-950" />
-                    <span>{lang === 'ne' ? 'परामर्श लिनुहोस्' : 'Get Consultation'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* AI Response Display */}
-          {aiAnswer && (
-            <div className="p-5 bg-gradient-to-b from-amber-900/30 to-black border border-amber-500/70 rounded-xl shadow-2xl space-y-3 animate-fadeIn">
-              <div className="flex items-center gap-2 text-amber-300 font-serif font-bold text-sm pb-2 border-b border-amber-800/50">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>पण्डित शम्भु प्रसाद लम्सालको सटिक फलादेश (वर्ष {targetYear}):</span>
-              </div>
-              <div className="text-xs sm:text-sm text-amber-100 leading-relaxed whitespace-pre-line font-sans">
-                {aiAnswer}
-              </div>
-            </div>
-          )}
         </div>
       )}
         </>

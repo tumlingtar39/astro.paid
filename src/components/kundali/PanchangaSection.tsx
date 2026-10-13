@@ -24,7 +24,7 @@ export const PanchangaSection: React.FC<PanchangaSectionProps> = ({
         </h3>
         <div className="flex items-center gap-2 text-xs">
           <span className="px-2.5 py-1 rounded-full bg-amber-900/60 border border-amber-700 text-amber-300 font-semibold">
-            {panchanga.samvatsaraNe || 'आनन्द'} संवत्सर
+            {panchanga.samvatsaraNe || 'रौद्र'} संवत्सर
           </span>
           <span className="px-2.5 py-1 rounded-full bg-amber-900/60 border border-amber-700 text-amber-300 font-semibold">
             {panchanga.ayanaNe || 'उत्तरायण'} ({panchanga.rituNe || 'वसन्त'})

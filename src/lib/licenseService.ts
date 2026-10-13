@@ -858,7 +858,58 @@ export async function verifyOrActivateLicense(
     };
   }
 
-  // 1. Try server-side verification endpoint if available (Development or Custom Server)
+  // 1. Strict Cloud Anti-Theft Lock Pre-Check across devices
+  let cloudRecord: LicenseRecord | null = null;
+  let lockedDoc: any = null;
+  if (db && navigator.onLine) {
+    try {
+      await ensureFirebaseAuth();
+      const [snapLic, snapLock] = await Promise.all([
+        getDoc(doc(db, 'licenses', licenseKey)),
+        getDoc(doc(db, 'locked_devices', licenseKey)),
+      ]);
+      if (snapLic.exists()) {
+        cloudRecord = snapLic.data() as LicenseRecord;
+      }
+      if (snapLock.exists()) {
+        lockedDoc = snapLock.data();
+      }
+    } catch (_dbErr) {
+      console.warn('Firestore cloud fetch notice:', _dbErr);
+    }
+  }
+
+  // If cloud record exists and is bound to a DIFFERENT physical device -> BLOCK IMMEDIATELY
+  const boundDevId = cloudRecord?.authorizedDeviceId || lockedDoc?.boundDeviceId;
+  if (boundDevId && boundDevId !== meta.deviceId) {
+    const map = getLocalLicensesMap();
+    if (map.has(licenseKey)) {
+      map.delete(licenseKey);
+      saveLocalLicensesMap(map);
+    }
+    removeStoredLicenseKey(licenseKey);
+    if (getStoredLicenseKey() === licenseKey) {
+      clearStoredLicenseKey();
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('astrology_user_subscription');
+      localStorage.removeItem('astro_active_key');
+      localStorage.removeItem('astro_lifetime_active');
+    }
+    return {
+      authorized: false,
+      status: 'BLOCKED_DIFFERENT_DEVICE',
+      licenseKey,
+      deviceId: meta.deviceId,
+      customerName: cloudRecord?.customerName || lockedDoc?.customerName,
+      activatedAt: cloudRecord?.activatedAt || lockedDoc?.activatedAt,
+      messageNe: '⚠️ अनधिकृत पहुँच रोकियो (Anti-Theft Protection): यो कोड पहिले नै अर्को १ आधिकारिक उपकरणमा दर्ता भइसकेको छ। १ कोड बाट केवल १ उपकरण मात्र चलाउन मिल्छ। अर्को डिभाइसमा यो कोड प्रयोग गर्न मिल्दैन।',
+      messageEn: 'Unauthorized Access Blocked (Anti-Theft Protection): This code is already permanently locked to another device. Single-device security policy is strictly enforced.',
+      license: cloudRecord,
+    };
+  }
+
+  // 2. Try server-side verification endpoint if available (Development or Custom Server)
   try {
     const res = await fetch('/api/license/verify-or-activate', {
       method: 'POST',
@@ -891,17 +942,48 @@ export async function verifyOrActivateLicense(
           map.set(licenseKey, data.license);
           saveLocalLicensesMap(map);
         }
+        // ATOMIC SYNC TO FIRESTORE SO ALL OTHER DEVICES AND BROWSERS SEE THIS KEY IS LOCKED
+        if (db) {
+          try {
+            await ensureFirebaseAuth();
+            const recordToSave = data.license || {
+              id: licenseKey,
+              licenseKey,
+              authorizedDeviceId: meta.deviceId,
+              deviceStatus: 'authorized',
+              status: 'active',
+              activatedAt: data.activatedAt || now,
+              lastSeenAt: now,
+              customerName: data.customerName || customerName || 'ग्राहक',
+            };
+            await setDoc(doc(db, 'licenses', licenseKey), cleanFirestoreData({
+              ...recordToSave,
+              authorizedDeviceId: meta.deviceId,
+              deviceStatus: 'authorized',
+              status: 'active',
+            }), { merge: true });
+
+            await setDoc(doc(db, 'locked_devices', licenseKey), {
+              licenseKey,
+              boundDeviceId: meta.deviceId,
+              status: 'LOCKED',
+              activatedAt: data.activatedAt || now,
+              customerName: data.customerName || customerName || 'ग्राहक',
+              updatedAt: now,
+            }, { merge: true });
+          } catch (_syncErr) {
+            console.warn('Firestore cloud sync on activation note:', _syncErr);
+          }
+        }
         return data;
       } else {
         // STRICT CHECK: The server explicitly said this key is BLOCKED, REVOKED, EXPIRED or locked to another device!
-        // We MUST NOT bypass this or fall back to local unbounded seed!
         if (
           data.status === 'BLOCKED_DIFFERENT_DEVICE' ||
           data.status === 'REVOKED' ||
           data.status === 'EXPIRED' ||
           data.status === 'INVALID_LICENSE'
         ) {
-          // If this key was wrongfully saved locally, purge it from local device
           const map = getLocalLicensesMap();
           if (map.has(licenseKey)) {
             map.delete(licenseKey);
@@ -921,21 +1003,7 @@ export async function verifyOrActivateLicense(
       }
     }
   } catch (_err) {
-    // API endpoint unreachable (e.g. static Vercel deployment), proceed to Cloud & Local sync
-  }
-
-  // 2. Fetch from Firestore (Shared centralized database across all users' devices and Vercel)
-  let cloudRecord: LicenseRecord | null = null;
-  if (db) {
-    try {
-      await ensureFirebaseAuth();
-      const snap = await getDoc(doc(db, 'licenses', licenseKey));
-      if (snap.exists()) {
-        cloudRecord = snap.data() as LicenseRecord;
-      }
-    } catch (_dbErr) {
-      console.warn('Firestore cloud fetch notice:', _dbErr);
-    }
+    // API endpoint unreachable, proceed to Cloud & Local sync
   }
 
   // 3. Local Storage record
@@ -945,7 +1013,6 @@ export async function verifyOrActivateLicense(
   // Determine active license: Cloud record has highest priority for cross-device binding
   let targetRecord: LicenseRecord | null = cloudRecord || (localRecord && localRecord.authorizedDeviceId === meta.deviceId ? localRecord : null);
 
-  // If online server check was missed and cloud is available, or if cloud record exists:
   if (cloudRecord) {
     targetRecord = cloudRecord;
   }
@@ -1089,6 +1156,14 @@ export async function verifyOrActivateLicense(
       try {
         await ensureFirebaseAuth();
         await setDoc(doc(db, 'licenses', licenseKey), cleanFirestoreData(updatedRecord), { merge: true });
+        await setDoc(doc(db, 'locked_devices', licenseKey), {
+          licenseKey,
+          boundDeviceId: meta.deviceId,
+          status: 'LOCKED',
+          activatedAt: updatedRecord.activatedAt || now,
+          customerName: updatedRecord.customerName || 'ग्राहक',
+          updatedAt: now,
+        }, { merge: true });
       } catch (_e) {
         console.warn('Firestore sync note on activation:', _e);
       }

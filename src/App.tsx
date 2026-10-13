@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { BasicKundaliSection } from './components/BasicKundaliSection';
+import { DashaSection } from './components/DashaSection';
 import { KundaliSection } from './components/KundaliSection';
 import { YearlyPhalitSection } from './components/YearlyPhalitSection';
 import { ChatAssistant } from './components/ChatAssistant';
@@ -14,7 +15,6 @@ import { AccessibilityProvider } from './context/AccessibilityContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { KundaliInput, KundaliResult, Language } from './types';
-import { PANDIT_INFO } from './data/astrologyData';
 import { Sparkles, LayoutGrid, ArrowLeft, Home } from 'lucide-react';
 import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
 import { SubscriptionModal } from './components/subscription/SubscriptionModal';
@@ -101,25 +101,6 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
         {/* Vision & Font Zoom Settings Modal (Opened via Settings button) */}
         <AccessibilitySettingsModal lang={lang} />
 
-        {/* Return to Home Grid Pill (Shown when viewing a specific service) */}
-        {activeTab !== 'home' && activeTab !== 'dashboard' && (
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5">
-            <div className="flex items-center justify-between bg-amber-900/30 border border-amber-800/50 rounded-2xl p-2 px-3 backdrop-blur-xs">
-              <button
-                onClick={() => handleTabChange('home')}
-                className="flex items-center gap-1.5 text-amber-300 hover:text-amber-100 font-bold text-xs bg-amber-950/80 hover:bg-amber-900/90 border border-amber-700/60 px-3 py-1.5 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <Home className="w-3.5 h-3.5 text-amber-400" />
-                <span>{lang === 'ne' ? '🏠 मुख्य होम (Home)' : '🏠 Main Home'}</span>
-              </button>
-              <span className="text-[11px] text-amber-400/80 font-medium hidden sm:inline">
-                {lang === 'ne' ? 'सबै सेवाहरू हेर्न होम पेजमा फर्कनुहोस्' : 'Return to Home Services Grid'}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Main Content Area */}
         <main className="flex-1 pb-28 sm:pb-32">
           {(activeTab === 'home' || activeTab === 'dashboard') && (
@@ -139,6 +120,16 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
               activeInput={activeInput}
               onKundaliChange={handleKundaliChange}
               onOpenChina17={() => handleTabChange('china17')}
+              onOpenDasha={() => handleTabChange('dasha')}
+            />
+          )}
+          {activeTab === 'dasha' && (
+            <DashaSection
+              lang={lang}
+              activeKundali={activeKundali}
+              activeInput={activeInput}
+              onKundaliChange={handleKundaliChange}
+              onNavigateToKundali={() => handleTabChange('kundali')}
             />
           )}
           {activeTab === 'china17' && (
@@ -174,69 +165,21 @@ function MainAppContent({ lang, setLang }: MainAppContentProps) {
             />
           )}
 
-          {/* Floating Visiting Card Button (Quick Access) */}
-          <button
-            onClick={() => setShowVisitingCardModal(true)}
-            className="fixed bottom-16 sm:bottom-20 md:bottom-6 right-3 sm:right-6 z-30 bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-full shadow-2xl border-2 border-amber-300 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 group"
-            title="ज्योतिष परामर्श केन्द्र - भिजिटिङ कार्ड हेर्नुहोस्"
-          >
-            <Sparkles className="w-4 h-4 text-amber-950 group-hover:rotate-12 transition-transform shrink-0" />
-            <span className="text-xs sm:text-sm font-serif font-bold whitespace-nowrap">
-              {lang === 'ne' ? '📇 भिजिटिङ कार्ड' : '📇 Visiting Card'}
-            </span>
-          </button>
+          {/* Floating Visiting Card Button (Quick Access - Hidden on Phalit & Rashifal to prevent covering content) */}
+          {activeTab !== 'phalit' && activeTab !== 'rashifal' && (
+            <button
+              onClick={() => setShowVisitingCardModal(true)}
+              className="fixed bottom-16 sm:bottom-20 md:bottom-6 right-3 sm:right-6 z-30 bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-full shadow-2xl border-2 border-amber-300 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 group"
+              title="ज्योतिष परामर्श केन्द्र - भिजिटिङ कार्ड हेर्नुहोस्"
+            >
+              <Sparkles className="w-4 h-4 text-amber-950 group-hover:rotate-12 transition-transform shrink-0" />
+              <span className="text-xs sm:text-sm font-serif font-bold whitespace-nowrap">
+                {lang === 'ne' ? '📇 भिजिटिङ कार्ड' : '📇 Visiting Card'}
+              </span>
+            </button>
+          )}
 
-          {/* Global Footer */}
-          <footer className="bg-amber-950 border-t border-amber-800/60 py-6 px-4 text-center text-xs text-amber-300/80 space-y-2 mt-auto">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-amber-800 flex items-center justify-center text-amber-300 font-serif text-xs font-bold border border-amber-500/50">
-                  ॐ
-                </span>
-                <span className="font-bold font-serif text-amber-100">
-                  {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
-                </span>
-              </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-amber-400">
-                <button onClick={() => handleTabChange('kundali')} className="hover:underline font-bold text-amber-300">
-                  {lang === 'ne' ? 'कुण्डली (३ कुण्डली निःशुल्क)' : 'Kundali (3 Charts Free)'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('china17')} className="hover:underline">
-                  {lang === 'ne' ? 'पूरा चिना (१७ कुण्डली सहितको चिना)' : 'Full Cheena (17 Kundali)'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('phalit')} className="hover:underline">
-                  {lang === 'ne' ? 'फलित (सदस्यता)' : 'Phalit (Member)'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('assistant')} className="hover:underline font-bold text-amber-200">
-                  {lang === 'ne' ? 'Binay Guru AI Assistant' : 'Binay Guru AI Assistant'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('milan')} className="hover:underline">
-                  {lang === 'ne' ? 'कुण्डली मिलान' : 'Kundali Milan'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('numerology')} className="hover:underline">
-                  {lang === 'ne' ? 'अंक ज्योतिष' : 'Numerology'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('vastu')} className="hover:underline">
-                  {lang === 'ne' ? 'वास्तु शास्त्र' : 'Vastu'}
-                </button>
-                <span>•</span>
-                <button onClick={() => handleTabChange('rashifal')} className="hover:underline">
-                  {lang === 'ne' ? 'पञ्चाङ्ग र राशिफल' : 'Panchang & Rashifal'}
-                </button>
-              </div>
-
-              <div className="text-[11px] text-amber-400/80">
-                © {new Date().getFullYear()} {PANDIT_INFO.nameEn} - All Rights Reserved
-              </div>
-            </div>
-          </footer>
         </div>
       </AccessibilityProvider>
   );

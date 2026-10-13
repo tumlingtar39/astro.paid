@@ -18,15 +18,10 @@ export const PlanetaryPositionsTable: React.FC<PlanetaryPositionsTableProps> = (
           <Compass className="w-5 h-5 text-amber-400" />
           <span>
             {lang === 'ne'
-              ? 'ग्रह स्थिति, गति (मार्गी/बक्री) र दृष्टि (उदय/अस्त) तालिका'
-              : 'Planetary Positions, Motion (Direct/Retrograde) & Visibility (Risen/Combust) Table'}
+              ? 'ग्रह स्थिति तालिका'
+              : 'Planetary Positions Table'}
           </span>
         </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-amber-400/80 bg-amber-900/40 px-2.5 py-1 rounded-full border border-amber-700/50">
-            {lang === 'ne' ? 'लाहिडी अयनंश (Lahiri Ayanamsa Sidereal)' : 'Lahiri Ayanamsa Sidereal'}
-          </span>
-        </div>
       </div>
 
       <div className="overflow-x-auto">

@@ -1,6 +1,6 @@
 {
-  "name": "Remix astro guru..",
-  "description": "Binay Guru AI Assistant for Youth Astrologer Pandit Shambhu Prasad Lamsal offering Jyotish, 17 Kundali & China, Numerology, Vastu Shastra, and Personalized Yearly Phalit predictions.",
+  "name": "Baidik Jyotish Guru",
+  "description": "वैदिक ज्योतिष गुरु (Baidik Jyotish Guru) - कुण्डली, दशा, पञ्चाङ्ग, राशिफल, वास्तु तथा फलादेश।",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

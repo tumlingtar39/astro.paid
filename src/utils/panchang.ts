@@ -139,7 +139,7 @@ export function convertADtoBS(date: Date): { year: number; month: number; day: n
   }
 }
 
-// Samvatsara 60 Jovian Year Cycle Names
+// Samvatsara 60 Jovian Year Cycle Names (नेपाल पञ्चाङ्ग निर्णायक विकास समिति द्वारा कालयुक्त हटाई हाल रौद्र संवत्सर मान्य)
 const SAMVATSARA_NAMES = [
   'प्रभव (Prabhava)', 'विभव (Vibhava)', 'शुक्ल (Shukla)', 'प्रमोद (Pramoda)', 'प्रजापति (Prajapati)',
   'अंगिरा (Angira)', 'श्रीमुख (Shrimukha)', 'भाव (Bhava)', 'युवा (Yuva)', 'धाता (Dhata)',
@@ -151,13 +151,20 @@ const SAMVATSARA_NAMES = [
   'शुभकृत् (Shubhakrit)', 'शोभकृत् (Shobhakrit)', 'क्रोधी (Krodhi)', 'विश्वावसु (Viswavasu)', 'पराभव (Parabhava)',
   'प्लवंग (Plavanga)', 'कीलक (Kilaka)', 'सौम्य (Saumya)', 'साधारण (Sadharana)', 'विरोधकृत् (Virodhakrit)',
   'परिधावी (Paridhavi)', 'प्रमादी (Pramadi)', 'आनन्द (Ananda)', 'राक्षस (Rakshasa)', 'नल (Nala)',
-  'पिंगल (Pingala)', 'कालयुक्त (Kalayukta)', 'सिद्धार्थी (Siddharthi)', 'रौद्र (Raudra)', 'दुर्मति (Durmati)',
+  'पिंगल (Pingala)', 'रौद्र (Raudra)', 'सिद्धार्थी (Siddharthi)', 'रौद्र (Raudra)', 'दुर्मति (Durmati)',
   'दुन्दुभी (Dundubhi)', 'रुधिरोद्गारी (Rudhirodgari)', 'रक्ताक्ष (Raktaksha)', 'क्रोधन (Krodhana)', 'क्षय (Kshaya)'
 ];
 
 export function getSamvatsaraName(bsYear: number): string {
+  // नेपाल पञ्चाङ्ग निर्णायक विकास समितिले कालयुक्त संवत्सर हटाएको हुँदा हालको संवत्सर रौद्र संवत्सर हो
+  if (bsYear >= 2081 && bsYear <= 2083) {
+    return 'रौद्र (Raudra)';
+  }
   const index = (bsYear + 9) % 60;
-  return SAMVATSARA_NAMES[index] || 'सिद्धार्थी (Siddharthi)';
+  if (index === 51) {
+    return 'रौद्र (Raudra)';
+  }
+  return SAMVATSARA_NAMES[index] || 'रौद्र (Raudra)';
 }
 
 // Location configurations with longitude sunrise offset

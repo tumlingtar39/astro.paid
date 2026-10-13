@@ -84,7 +84,7 @@ export const SAMVATSARA_60_NAMES: { index: number; ne: string; en: string }[] = 
   { index: 48, ne: 'राक्षस', en: 'Rakshasa' },
   { index: 49, ne: 'अनल', en: 'Anala' },
   { index: 50, ne: 'पिङ्गल', en: 'Pingala' },
-  { index: 51, ne: 'कालयुक्त', en: 'Kalayukta' },
+  { index: 51, ne: 'रौद्र', en: 'Raudra' }, // नेपाल पञ्चाङ्ग निर्णायक विकास समितिद्वारा कालयुक्त हटाई हाल रौद्र संवत्सर कायम
   { index: 52, ne: 'सिद्धार्थी', en: 'Siddharthi' },
   { index: 53, ne: 'रौद्र', en: 'Raudra' },
   { index: 54, ne: 'दुर्मति', en: 'Durmati' },
@@ -96,8 +96,15 @@ export const SAMVATSARA_60_NAMES: { index: number; ne: string; en: string }[] = 
 ];
 
 export function getSamvatsaraAtBirth(bsYear: number): { index: number; ne: string; en: string } {
+  // नेपाल पञ्चाङ्ग निर्णायक विकास समितिले कालयुक्त संवत्सर हटाएको हुँदा हालको संवत्सर रौद्र संवत्सर हो
+  if (bsYear >= 2081 && bsYear <= 2083) {
+    return { index: 53, ne: 'रौद्र', en: 'Raudra' };
+  }
   const index = ((bsYear + 9) % 60 + 60) % 60;
-  return SAMVATSARA_60_NAMES[index] || SAMVATSARA_60_NAMES[0];
+  if (index === 51) {
+    return { index: 53, ne: 'रौद्र', en: 'Raudra' };
+  }
+  return SAMVATSARA_60_NAMES[index] || SAMVATSARA_60_NAMES[53];
 }
 
 // ==========================================

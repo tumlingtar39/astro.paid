@@ -153,21 +153,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       id: 'rashifal',
       labelNe: 'पञ्चाङ्ग र राशिफल',
       labelEn: 'Panchang & Rashifal',
-      shortNe: 'पञ्चाङ्ग',
-      shortEn: 'Panchang',
+      shortNe: 'पञ्चाङ्ग र राशिफल',
+      shortEn: 'Panchang & Rashifal',
       icon: Calendar,
-      descNe: 'आजको पञ्चाङ्ग, १२ राशिको फल र शुभ मुहूर्त (निःशुल्क)',
-      descEn: 'Daily Panchang, 12 Zodiac horoscope & Muhurat (Free)',
-    },
-    {
-      id: 'assistant',
-      labelNe: 'Binay Guru AI Assistant',
-      labelEn: 'Binay Guru AI Assistant',
-      shortNe: 'AI गुरु',
-      shortEn: 'AI Guru',
-      icon: MessageSquare,
-      descNe: 'विनय गुरु (पण्डित शम्भु प्रसाद लम्साल) को प्रत्यक्ष AI ज्योतिष परामर्श',
-      descEn: 'Direct AI Astrology Consultation by Binay Guru AI Assistant',
+      descNe: 'पञ्चाङ्ग, मुहूर्त, साईत र १२ राशिको फल (निःशुल्क)',
+      descEn: 'Panchang, Muhurat, Sait & Daily Horoscope (Free)',
     },
   ];
 
@@ -291,10 +281,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <div>
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-amber-100 tracking-wide font-serif leading-tight group-hover:text-amber-300 transition-colors">
-                {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
+                {lang === 'ne' ? 'वैदिक ज्योतिष गुरु' : 'Baidik Jyotish Guru'}
               </h1>
               <p className="text-[10px] sm:text-xs text-amber-300/80 font-medium line-clamp-1">
-                {lang === 'ne' ? PANDIT_INFO.titleNe : PANDIT_INFO.titleEn}
+                {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
               </p>
             </div>
           </div>
@@ -388,22 +378,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             );
           })}
-
-          {/* Full 4-Column Grid Drawer Toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className={`shrink-0 flex flex-col items-center justify-center py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl transition-all duration-200 select-none active:scale-95 border min-w-[54px] sm:min-w-[70px] cursor-pointer ${
-              mobileMenuOpen
-                ? 'bg-amber-800 text-amber-200 border-amber-500 shadow-sm'
-                : 'bg-amber-900/50 hover:bg-amber-800/60 text-amber-300 border-amber-700/50'
-            }`}
-            title="४x ग्रिड मेनु खोल्नुहोस्"
-          >
-            <LayoutGrid className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-300 mb-0.5" />
-            <span className="text-[10px] sm:text-[11px] whitespace-nowrap leading-tight font-bold">
-              {lang === 'ne' ? '४x मेनु' : 'Grid'}
-            </span>
-          </button>
         </div>
       </nav>
 
@@ -418,29 +392,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Drawer Sheet */}
-          <div className="bg-[#fcfaf6] dark:bg-[#1c130b] border-t-2 border-amber-500 rounded-t-3xl p-3 sm:p-4 shadow-2xl max-h-[90vh] overflow-y-auto border-x border-amber-800/60">
+          <div className="bg-[#1c130b] border-t-2 border-amber-500 rounded-t-3xl p-3 sm:p-4 shadow-2xl max-h-[90vh] overflow-y-auto border-x border-amber-800/60 text-amber-50">
             {/* Sheet Handle Indicator */}
-            <div className="w-12 h-1.5 bg-stone-300 dark:bg-amber-800/70 rounded-full mx-auto mb-2" />
+            <div className="w-12 h-1.5 bg-amber-800/70 rounded-full mx-auto mb-2" />
 
             {/* Header in Mobile Drawer */}
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-amber-800/60">
+            <div className="flex items-center justify-between pb-2 border-b border-amber-800/60">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-amber-800 border border-amber-500/50 flex items-center justify-center text-amber-300 font-serif font-bold text-sm shadow-xs">
                   ॐ
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-stone-900 dark:text-amber-100 font-serif">
-                    {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
+                  <h3 className="text-xs font-bold text-amber-100 font-serif">
+                    {lang === 'ne' ? 'वैदिक ज्योतिष गुरु' : 'Baidik Jyotish Guru'}
                   </h3>
-                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
-                    {lang === 'ne' ? 'मोबाइल ड्यासबोर्ड (४-कलम ग्रिड)' : 'Mobile Dashboard (4-Column Grid)'}
+                  <p className="text-[10px] text-amber-400 font-medium">
+                    {lang === 'ne' ? PANDIT_INFO.nameNe : PANDIT_INFO.nameEn}
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 text-stone-600 dark:text-amber-300 hover:text-stone-900 dark:hover:text-amber-100 bg-stone-200/80 dark:bg-amber-900/60 rounded-full border border-stone-300 dark:border-amber-700/50"
+                className="p-1.5 text-amber-300 hover:text-amber-100 bg-amber-900/60 rounded-full border border-amber-700/50"
               >
                 <X className="w-5 h-5" />
               </button>

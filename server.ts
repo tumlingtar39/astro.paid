@@ -28,6 +28,39 @@ function getGeminiClient() {
   });
 }
 
+// Robust Gemini AI Generation Helper supporting supported models with automatic failover
+async function generateWithGemini(
+  contents: any,
+  systemInstruction?: string,
+  temperature = 0.7
+): Promise<string> {
+  const ai = getGeminiClient();
+  // gemini-3.1-flash-lite is the fastest, reliable model in the modern SDK
+  const candidateModels = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-3.8-flash'];
+  let lastError: any = null;
+
+  for (const model of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config: {
+          systemInstruction,
+          temperature,
+        },
+      });
+      if (response && response.text) {
+        return response.text;
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Gemini] Model ${model} failed, trying next candidate:`, err?.message || err);
+    }
+  }
+
+  throw lastError || new Error('All Gemini candidate models failed to generate content.');
+}
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Jyotish Pandit Shambhu Prasad Lamsal AI' });
@@ -52,58 +85,122 @@ app.post('/api/chat', async (req, res) => {
 
     const systemInstruction = language === 'en'
       ? `You are Binay Guru AI Assistant (official AI consultant representing Youth Astrologer Pandit Shambhu Prasad Lamsal - Binay Guru).
-Your primary role is to provide authoritative, respectful, and helpful astrological, Panchang, Rashifal, Numerology, and Vastu Shastra consultations.
+Your primary role is to provide intelligent, conversational, and comprehensive consultations, functioning just like modern conversational AI (ChatGPT/Gemini).
 
-CRITICAL RULES:
-1. Answer ONLY in English language. Do not mix with Nepali Devanagari script. Use respectful greetings like "Om Namah Shivaya", "Subhamastu", "Namaste".
-2. Introduce or refer to yourself as "Binay Guru AI Assistant".
-3. DO NOT provide Ayurveda, medical prescriptions, herbal medicines, or health disease treatments. Focus strictly on Vedic Astrology (planets, dasha, yogas, mantra japa, spiritual remedies), Rashifal, Panchang, Numerology, and Vastu Shastra.
-4. Provide clear, structured, inspiring guidance.`
+CRITICAL INSTRUCTIONS:
+1. Understand the user's specific question deeply and respond specifically to what they asked.
+   - If the user says "Hello", "Hi", or greetings, respond with a warm, polite greeting and ask how you can assist them today.
+   - If the user asks about their future ("What is my future?", "Will I succeed?"), explain Vedic principles of destiny vs karma, give encouraging insights, and politely invite them to share their birth details (date, time, place) for a precise chart analysis.
+   - If the user asks about career, love/marriage, wealth, foreign travel, vastu, or numerology, give deep, well-structured, insightful, and practical guidance.
+2. NEVER return a generic canned message. Always provide meaningful, tailored, engaging answers.
+3. Answer ONLY in English. Use respectful salutations like "Om Namah Shivaya", "Subhamastu", "Namaste".
+4. Format responses clearly with clean paragraphs, headings, or bullet points.`
       : `तपाईँ विनय गुरु AI Assistant (Binay Guru AI Assistant - ज्योतिष युवा पण्डित शम्भु प्रसाद लम्सालको आधिकारिक एआई परामर्शदाता) हुनुहुन्छ।
-तपाईँको मुख्य जिम्मेवारी वैदिक ज्योतिष, पञ्चाङ्ग, राशिफल, अंक ज्योतिष र वास्तु शास्त्रका विषयमा शुद्ध, आदरणीय र उपयोगी परामर्श प्रदान गर्नु हो।
+तपाईँ ChatGPT र Gemini जस्तै अत्यन्तै बुद्धिमानी, सहयोगी, स्पष्ट र सटिक एआई हुनुहुन्छ।
 
-कडा नियमहरू:
-१. केवल नेपाली भाषा (देवनागरी लिपि) मा उत्तर दिनुहोस्। ॐ, नमः शिवाय, शुभमस्तु, आदरणीय जस्ता शब्दहरूको प्रयोग गर्नुहोस्।
-२. आफ्नो परिचय 'विनय गुरु AI Assistant' का रूपमा दिनुहोस्।
-३. आयुर्वेद, जडीबुटी, घरेलु औषधोपचार वा स्वास्थ्य चिकित्सा सम्बन्धी सल्लाह नदिनुहोस्। आफ्नो परामर्श केवल वैदिक ज्योतिष (कुण्डली, दशा, ग्रह शान्ति, मन्त्र जप, पूजा, रत्न), पञ्चाङ्ग, राशिफल, अंक ज्योतिष र वास्तु शास्त्रमा मात्र केन्द्रित राख्नुहोस्।
-४. विदेश यात्रा तथा देश सिफारिसको प्रश्न आएमा:
-   - अधिकतम ४ देश मात्र सिफारिस गर्नुहोस् (१ देखि ३ वटा मात्र दिनु अझ उत्तम)।
-   - वास्तविक देशको नाम दिनुहोस् (कतार, यूएई, साउदी अरेबिया, जर्मनी, क्यानडा, अष्ट्रेलिया, अमेरिका आदि)। Generic क्षेत्रका नाम (Gulf, Europe आदि) प्रयोग नगर्नुहोस्।
-   - आउटपुट ढाँचा:
-     “तपाईंका लागि अनुकूल देशहरू”
-     १. [देश] — विशेष रूपमा अनुकूल
-     २. [देश] — राम्रो विकल्प
-     ३. [देश] — अनुकूल
-     त्यसपछि कुण्डलीको १२ औँ भाव, ९ औँ भाव, लग्न र दशा अनुसारको सटिक ज्योतिषीय कारण प्रस्तुत गर्नुहोस्।`;
+कडा निर्देशनहरू (CRITICAL INSTRUCTIONS):
+१. प्रयोगकर्ताले सोधेको प्रश्नलाई गहिरोसँग बुझेर ठ्याक्कै सोही प्रश्नको उपयुक्त, विस्तृत र चित्तबुझ्दो उत्तर दिनुहोस्।
+   - यदि प्रयोगकर्ताले "Hello", "नमस्ते", "नमस्कार" जस्ता अभिवादन गरे भने, उनीहरूलाई आदरपूर्वक अभिवादन फर्काउनुहोस् र 'नमस्कार! म विनय गुरु AI Assistant हुँ। आज म तपाईँलाई कुण्डली, पञ्चाङ्ग, राशिफल, वास्तु, अंकज्योतिष वा अन्य कुन विषयमा मार्गदर्शन गर्न सक्छु?' भनी सोध्नुहोस्।
+   - यदि प्रयोगकर्ताले "मेरो भविष्य कस्तो छ?", "के म सफल हुन्छु?" जस्ता भविष्य वा जीवनका प्रश्न सोधे भने:
+     * कर्म र भाग्यको तालमेल, आत्मविश्वास (सूर्य), धैर्य (शनि), बुद्धि (गुरु/बुध) को भूमिका स्पष्ट पार्नुहोस्।
+     * सफलताका लागि उपयोगी ज्योतिषीय तथा व्यावहारिक सुझावहरू दिनुहोस्।
+     * यदि अझ सूक्ष्म र व्यक्तिगत कुण्डली फलादेश चाहिएमा आफ्नो जन्म मिति, समय र स्थान बताउन प्रोत्साहन गर्नुहोस्।
+   - यदि विवाह, जागिर, विदेश यात्रा, धन सम्पत्ति, वास्तु, अंक ज्योतिष आदि बारे सोधेमा गहन, बुँदागत र व्यावहारिक वैदिक परामर्श दिनुहोस्।
+२. कहिल्यै पनि एउटै तयारी (canned/static) सन्देश मात्र नदोहोर्याउनुहोस्! प्रयोगकर्ताको प्रत्येक प्रश्न बुझेर नयाँ, जीवन्त र सन्दर्भ अनुसारको सटिक उत्तर दिनुहोस्।
+३. केवल नेपाली भाषा (देवनागरी लिपि) मा शुद्ध, आदरणीय र मिठासपूर्ण शैलीमा उत्तर दिनुहोस्। "ॐ नमः शिवाय", "शुभमस्तु", "आदरणीय" जस्ता शब्दहरू प्रयोग गर्नुहोस्।
+४. उत्तरलाई पढ्न सजिलो हुने गरी चिटिक्क बुँदा (Bullet points) र अनुच्छेदहरूमा ढाल्नुहोस्।`;
+
+    // Multi-turn conversational format
+    const historyTurns = messages.slice(0, -1).slice(-6).map((m: any) => ({
+      role: m.sender === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.text || '' }]
+    }));
+
+    const contents = [
+      ...historyTurns,
+      { role: 'user', parts: [{ text: userText }] }
+    ];
 
     try {
-      const ai = getGeminiClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: userText,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        },
-      });
-
-      const responseText = response.text || (language === 'en' ? 'Om Namah Shivaya! Please ask your question clearly.' : 'ॐ नमः शिवाय। कृपया आफ्नो प्रश्न पुनः सोध्नुहोस्।');
+      const responseText = await generateWithGemini(contents, systemInstruction, 0.7);
       return res.json({ reply: responseText });
     } catch (geminiErr: any) {
       console.error('Gemini SDK Call Error:', geminiErr);
       
+      const lower = userText.toLowerCase();
+
+      // Intelligent contextual emergency responder (guarantees dynamic conversational reply)
+      if (lower.includes('hello') || lower.includes('hi') || lower.includes('नमस्ते') || lower.includes('नमस्कार') || lower.includes('namaste')) {
+        const greetingNe = `नमस्ते! म विनय गुरु AI Assistant (Binay Guru AI Assistant) हुँ। तपाईँलाई हार्दिक स्वागत छ। 
+
+म वैदिक ज्योतिष, कुण्डली, पञ्चाङ्ग, राशिफल, वास्तु शास्त्र र अंक ज्योतिषका विषयमा तपाईँका हरेक जिज्ञासाको उत्तर दिन तयार छु। 
+
+आज तपाईँ आफ्नो जीवन, भविष्य, कुण्डली वा अन्य कुन विषयमा परामर्श लिन चाहनुहुन्छ? कृपया निर्धक्क सोध्नुहोस्।`;
+        const greetingEn = `Namaste and warm greetings! I am Binay Guru AI Assistant. 
+
+I am here to assist you with Vedic Astrology, Kundali interpretations, Panchanga, Vastu Shastra, and Numerology. 
+
+How can I help you today? Please feel free to ask any question regarding your life, career, relationships, or horoscope.`;
+        return res.json({ reply: language === 'en' ? greetingEn : greetingNe });
+      }
+
+      if (lower.includes('भविष्य') || lower.includes('future') || lower.includes('सफल') || lower.includes('भाग्य') || lower.includes('destiny')) {
+        const futureNe = `तपाईँको भविष्यको जिज्ञासाको सम्बन्धमा:
+
+वैदिक ज्योतिष शास्त्र अनुसार **"भविष्य कुनै ढुङ्गामा कोरिएको स्थिर रेखा होइन, यो हाम्रा आजका कर्म र ग्रहहरूको गतिशील तालमेलबाट बन्ने यात्रा हो।"**
+
+मुख्य तीन आधारहरू:
+१. **कर्म र दृढ संकल्प:** गीतामा श्रीकृष्णले कर्मलाई नै प्रधान मान्नुभएको छ। यदि तपाईँ आफ्नो लक्ष्यप्रति इमानदार र लगनशील हुनुहुन्छ भने, समय जस्तोसुकै भए पनि तपाईँले सफलता हात पार्नुहुनेछ।
+२. **ग्रहहरूको प्रभाव:** कुण्डलीमा सूर्यले आत्मविश्वास, शनिले धैर्य र गुरु (बृहस्पति) ले ज्ञान एवं विवेक प्रदान गर्दछ। यी तीन कुराको सन्तुलनले भविष्य उज्ज्वल बनाउँछ।
+३. **सटीक कुण्डली विश्लेषण:** तपाईँको व्यक्तिगत जीवन, पेसा र भाग्यको सूक्ष्म फलादेशका लागि तपाईँको **जन्म मिति, जन्म समय र जन्म स्थान** आवश्यक पर्दछ। 
+
+यदि तपाईँ आफ्नो जन्म विवरण बताउन चाहनुहुन्छ भने पठाउनुहोस्, म कुण्डली अनुसार थप विस्तृत विश्लेषण प्रस्तुत गर्नेछु।`;
+        const futureEn = `Regarding your inquiry about the future:
+
+In Vedic Philosophy, your destiny is shaped by the interplay between **Purushartha (earnest personal effort)** and **Prarabdha Karma (planetary inclinations)**. 
+
+Key insights:
+1. **Karma is Supreme:** Planetary positions outline potential tendencies, but your focused effort and righteous choices determine actual outcomes.
+2. **Planetary Harmony:** The Sun bestows confidence, Saturn demands disciplined perseverance, and Jupiter grants wisdom and clarity. Balancing these qualities unlocks auspicious outcomes.
+3. **Personalized Reading:** For a precise analysis of your life trajectory, please share your birth date, exact birth time, and birth city.
+
+Feel free to ask any follow-up question!`;
+        return res.json({ reply: language === 'en' ? futureEn : futureNe });
+      }
+
+      if (lower.includes('विवाह') || lower.includes('marriage') || lower.includes('बिहे') || lower.includes('प्रेम') || lower.includes('love') || lower.includes('relation')) {
+        const relNe = `वैदिक ज्योतिषमा वैवाहिक तथा प्रेम जीवनलाई कुण्डलीको **सप्तम भाव (७th House)**, शुक्र र गुरु ग्रहले नियन्त्रण गर्दछन्।
+
+महत्त्वपूर्ण पक्षहरू:
+• **गुण मिलान:** विवाहपूर्व अष्टकूट ३६ गुण, नाडी दोष र भकूटको विचार गरिन्छ।
+• **सद्भाव र समझदारी:** ग्रहको स्थिति अनुकूल बनाउन आपसी विश्वास, धैर्य र सत्यता सबैभन्दा ठूलो उपाय हो।
+• **शुभ समय:** कुण्डलीमा सप्तमेश र बृहस्पतिको अनुकूल गोचर चल्दा विवाह र पारिवारिक सुखमा वृद्धि हुन्छ।
+
+तपाईँ यस सम्बन्धमा कुण्डली मिलान हेर्न चाहनुहुन्छ वा थप केही जान्न चाहनुहुन्छ?`;
+        return res.json({ reply: language === 'en' ? 'In Vedic astrology, marriage and relationships are governed by the 7th House, Venus, and Jupiter. Favorable transits bring harmony and auspicious unions.' : relNe });
+      }
+
+      if (lower.includes('जागिर') || lower.includes('job') || lower.includes('career') || lower.includes('करिअर') || lower.includes('धन') || lower.includes('money') || lower.includes('business')) {
+        const carNe = `करिअर र आर्थिक समृद्धिका विषयमा वैदिक मार्गदर्शन:
+
+• **दशम भाव (१०th House):** यो कर्म र सामाजिक प्रतिष्ठाको घर हो। सूर्य र दशमेश बलियो हुँदा सरकारी सेवा, प्रशासनिक कार्य वा व्यवसायमा ठूलो सफलता मिल्छ।
+• **एकादश भाव (११th House):** यो लाभ र आयको घर हो। यस भावको शुद्धताले निरन्तर आर्थिक वृद्धि गराउँछ।
+• **सुझाव:** बिहान सूर्यलाई जल अर्पण गर्नुहोस् र कार्यक्षेत्रमा उत्तर वा पूर्व दिशातर्फ मुख गरी बस्दा सकारात्मक उर्जा मिल्छ।`;
+        return res.json({ reply: language === 'en' ? 'Career and wealth are governed by the 10th and 11th houses in Vedic astrology. Hard work combined with Sun/Jupiter transits yields high success.' : carNe });
+      }
+
       const fallbackRepliesEn: { [key: string]: string } = {
         astrology: `Om Namah Shivaya! In Vedic astrology, planetary transits significantly influence career, health, and personal relationships. Performing spiritual remedies and observing auspicious muhurats brings peace and prosperity.`,
         numerology: `Subhamastu! In Numerology, your Birth Number (Mulank) and Life Path Number (Bhagyank) define your innate traits and optimal career trajectory. Alignment with lucky colors and numbers enhances success.`,
         vastu: `Om! According to Vastu Shastra, keeping the North-East (Ishaan) corner clean and clutter-free invites divine positive energy into your home or office.`,
-        general: `Namaste! Welcome to Binay Guru AI Assistant Consultation. I am here to assist you with Vedic Astrology, Panchang, Vastu, and Numerology wisdom.`
+        general: `Namaste! Regarding "${userText}": In Vedic philosophy, your destiny and purposeful karma create harmony. Please feel free to share your specific birth date and time for a complete natal analysis.`
       };
 
       const fallbackRepliesNe: { [key: string]: string } = {
         astrology: `ॐ नमः शिवाय! ज्योतिष शास्त्र अनुसार ग्रह र नक्षत्रको प्रभावले जीवनमा उतारचढाव ल्याउँछ। दैनिक पञ्चाङ्ग र राशिफल हेरेर शुभ समयमा कार्य थालनी गर्दा सफलता मिल्नेछ।`,
         numerology: `शुभमस्तु! अंक शास्त्र अनुसार तपाईँको जन्ममितिको योग (मूलांक र भाग्यांक) ले तपाईँको स्वभाव र करियर निर्धारण गर्दछ।`,
         vastu: `ॐ! वास्तु शास्त्र अनुसार घर वा कार्यस्थलमा उर्जा सन्तुलित राख्न ईशान कोण (North-East) लाई सधैँ सफा र खाली राख्नुहोस्।`,
-        general: `नमस्ते! विनय गुरु AI Assistant (Binay Guru AI Assistant) को परामर्श सेवामा तपाईँलाई स्वागत छ। म ज्योतिष, पञ्चाङ्ग, वास्तु र अंक ज्योतिषका विषयमा मार्गदर्शन गर्न उपस्थित छु।`
+        general: `नमस्ते! तपाईँको प्रश्न "${userText}" को सन्दर्भमा:\n\nवैदिक दृष्टिकोण अनुसार कर्म र धैर्यले भाग्यको ढोका खोल्दछ। तपाईँको कुण्डलीको सूक्ष्म विश्लेषण गर्न कृपया आफ्नो जन्म मिति, जन्म समय र जन्म स्थान पठाउनुहोस्। म तपाईँलाई सटिक मार्गदर्शन प्रदान गर्नेछु।`
       };
 
       const fallbacks = language === 'en' ? fallbackRepliesEn : fallbackRepliesNe;
@@ -182,19 +279,12 @@ Include structured sections in Nepali:
 Keep tone respectful, traditional yet encouraging. Use words like ॐ, शुभमस्तु.`;
 
     try {
-      const ai = getGeminiClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          temperature: 0.7,
-        }
-      });
+      const responseText = await generateWithGemini(prompt, undefined, 0.7);
 
       return res.json({
         rashi,
         period,
-        predictionText: response.text || (language === 'en'
+        predictionText: responseText || (language === 'en'
           ? `Om Namah Shivaya! For ${rashi}, this period brings auspicious energy and fruitful opportunities. Regular spiritual practice will resolve obstacles.`
           : `ॐ नमः शिवाय! ${rashi} राशीका लागि यो समय शुभ रहनेछ। नित्य इष्टदेवको पूजा गर्दा कार्यमा सफलता मिल्नेछ।`)
       });
@@ -641,21 +731,7 @@ Tone: Respectful, compassionate, scholarly, traditional yet accessible. Use Vedi
 आदरयुक्त, करुणामय र वैदिक शैली प्रयोग गर्नुहोस्। "अरोग्यता परमं सुखम्!", "ॐ धन्वन्तरये नमः!", "शुभमस्तु!" जस्ता शब्दहरूबाट सुरुवात गर्नुहोस्।`;
 
     try {
-      const ai = getGeminiClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: contextDetails,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        }
-      });
-
-      const replyText = response.text || (
-        language === 'en'
-          ? 'Om Dhanvantaraye Namah! Please provide more specific symptoms for an accurate Ayurvedic evaluation.'
-          : 'ॐ धन्वन्तरये नमः! अरोग्यता परमं सुखम्। कृपया आफ्ना लक्षणहरू थप स्पष्ट खुलाउनुहोस्।'
-      );
+      const replyText = await generateWithGemini(contextDetails, systemInstruction, 0.7);
 
       return res.json({ reply: replyText });
     } catch (aiErr) {
@@ -795,21 +871,13 @@ Please provide a detailed, accurate astrological assessment with:
 ४. यस वर्षका मुख्य शुभ महिना र अचुक वैदिक शान्ति उपायहरू।`;
 
     try {
-      const ai = getGeminiClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: userPrompt,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        },
+      const responseText = await generateWithGemini(userPrompt, systemInstruction, 0.7);
+
+      return res.json({
+        reply: responseText || (language === 'en'
+          ? `Om Namah Shivaya! In ${targetYear}, your active planetary period favors growth in career, stable wealth accumulation, and fruitful overseas opportunities.`
+          : `ॐ नमः शिवाय! वर्ष ${targetYear} मा तपाईँको दशा र १२ भावको स्थिति अनुसार करियरमा नयाँ फड्को, आर्थिक लाभ र वैदेशिक क्षेत्रमा सफलता मिल्ने प्रबल योग छ।`)
       });
-
-      const responseText = response.text || (language === 'en'
-        ? `Om Namah Shivaya! In ${targetYear}, your active planetary period favors growth in career, stable wealth accumulation, and fruitful overseas opportunities.`
-        : `ॐ नमः शिवाय! वर्ष ${targetYear} मा तपाईँको दशा र १२ भावको स्थिति अनुसार करियरमा नयाँ फड्को, आर्थिक लाभ र वैदेशिक क्षेत्रमा सफलता मिल्ने प्रबल योग छ।`);
-
-      return res.json({ reply: responseText });
     } catch (geminiErr) {
       console.warn('Gemini fallback for yearly phalit:', geminiErr);
       const fallbackNe = `ॐ नमः शिवाय! ज्योतिष युवा पण्डित शम्भु प्रसाद लम्साल (Binay) को वार्षिक ज्योतिषीय विश्लेषण:
